@@ -1,0 +1,42 @@
+[
+  {
+    "id": "welcome",
+    "description": "Welcome message",
+    "translation": "Welcome to Cryptocurrency Platform"
+  },
+  {
+    "id": "wallet.created",
+    "description": "Wallet creation success message",
+    "translation": "Wallet created successfully"
+  },
+  {
+    "id": "wallet.create_failed",
+    "description": "Wallet creation failure message",
+    "translation": "Failed to create wallet"
+  },
+  {
+    "id": "wallet.not_found",
+    "description": "Wallet not found error",
+    "translation": "Wallet not found"
+  },
+  {
+    "id": "error.internal",
+    "description": "Internal server error",
+    "translation": "Internal server error"
+  },
+  {
+    "id": "error.invalid_request",
+    "description": "Invalid request error",
+    "translation": "Invalid request"
+  },
+  {
+    "id": "error.unauthorized",
+    "description": "Unauthorized access error",
+    "translation": "Unauthorized access"
+  },
+  {
+    "id": "success",
+    "description": "Generic success message",
+    "translation": "Operation completed successfully"
+  }
+]

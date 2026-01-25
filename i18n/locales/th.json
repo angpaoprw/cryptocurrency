@@ -1,0 +1,42 @@
+[
+  {
+    "id": "welcome",
+    "description": "Welcome message",
+    "translation": "ยินดีต้อนรับสู่แพลตฟอร์มคริปโตเคอเรนซี"
+  },
+  {
+    "id": "wallet.created",
+    "description": "Wallet creation success message",
+    "translation": "สร้างกระเป๋าเงินสำเร็จ"
+  },
+  {
+    "id": "wallet.create_failed",
+    "description": "Wallet creation failure message",
+    "translation": "สร้างกระเป๋าเงินล้มเหลว"
+  },
+  {
+    "id": "wallet.not_found",
+    "description": "Wallet not found error",
+    "translation": "ไม่พบกระเป๋าเงิน"
+  },
+  {
+    "id": "error.internal",
+    "description": "Internal server error",
+    "translation": "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์"
+  },
+  {
+    "id": "error.invalid_request",
+    "description": "Invalid request error",
+    "translation": "คำขอไม่ถูกต้อง"
+  },
+  {
+    "id": "error.unauthorized",
+    "description": "Unauthorized access error",
+    "translation": "ไม่ได้รับอนุญาตให้เข้าถึง"
+  },
+  {
+    "id": "success",
+    "description": "Generic success message",
+    "translation": "ดำเนินการสำเร็จ"
+  }
+]
