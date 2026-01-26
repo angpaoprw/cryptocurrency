@@ -1,8 +1,4 @@
 {
-    "schemes": [
-        "http",
-        "https"
-    ],
     "swagger": "2.0",
     "info": {
         "description": "This is a cryptocurrency wallet and blockchain API server.",

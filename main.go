@@ -38,7 +38,6 @@ func init() {
 // @license.url https://opensource.org/licenses/MIT
 
 // @BasePath /v1
-// @schemes http https
 func main() {
 	conn := db.Connect()
 	// Run database migrations

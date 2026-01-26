@@ -77,7 +77,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
 	BasePath:         "/v1",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{},
 	Title:            "Cryptocurrency API",
 	Description:      "This is a cryptocurrency wallet and blockchain API server.",
 	InfoInstanceName: "swagger",

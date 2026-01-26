@@ -41,7 +41,4 @@ paths:
       summary: Health Check
       tags:
       - Health
-schemes:
-- http
-- https
 swagger: "2.0"
