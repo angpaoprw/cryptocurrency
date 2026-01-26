@@ -1,5 +1,4 @@
 basePath: /v1
-host: localhost:5000
 info:
   contact:
     email: support@cryptocurrency.com
