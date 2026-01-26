@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/angpaoprw/cryptocurrency/logger"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -16,11 +17,7 @@ import (
 func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 	// Log the incoming request body
 	body := c.Body()
-	zap.L().Info("Alchemy callback received",
-		zap.String("body", string(body)),
-		zap.String("method", c.Method()),
-		zap.String("path", c.Path()),
-	)
+	logger.Info("Received Alchemy Callback", zap.String("body", string(body)))
 
 	return c.SendString("Alchemy Callback")
 }
