@@ -5,9 +5,17 @@
 package db
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
 type Wallet struct {
-	ID uuid.UUID `json:"id"`
+	ID         uuid.UUID `json:"id"`
+	Blockchain string    `json:"blockchain"`
+	Address    string    `json:"address"`
+	PublicKey  string    `json:"public_key"`
+	PrivateKey string    `json:"private_key"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }

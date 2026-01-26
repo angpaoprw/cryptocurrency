@@ -6,12 +6,10 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 type Querier interface {
-	CreateWallet(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 }
 
 var _ Querier = (*Queries)(nil)

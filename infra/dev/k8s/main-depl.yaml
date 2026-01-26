@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: staging
+  name: cryptocurrency-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cryptocurrency
+  template:
+    metadata:
+      labels:
+        app: cryptocurrency
+    spec:
+      containers:
+        - name: cryptocurrency
+          image: angpaoprw/staging-tpl-cryptocurrency:latest
+          # resources:
+          #   requests:
+          #     memory: "100Mi"
+          #     cpu: "100m"
+          #   limits:
+          #     memory: "100Mi"
+          #     cpu: "100m"
+          envFrom:
+            - secretRef:
+                name: "cryptocurrency-staging-env"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cryptocurrency-srv
+  namespace: staging
+spec:
+  selector:
+    app: cryptocurrency
+  ports:
+    - name: cryptocurrency
+      protocol: TCP
+      port: 5000
+      targetPort: 5000

@@ -7,16 +7,37 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 const createWallet = `-- name: CreateWallet :one
-INSERT INTO wallets (id) VALUES ($1) RETURNING id
+INSERT INTO wallets (blockchain, address, public_key, private_key)
+VALUES ($1, $2, $3, $4)
+RETURNING id, blockchain, address, public_key, private_key, created_at, updated_at
 `
 
-func (q *Queries) CreateWallet(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, createWallet, id)
-	err := row.Scan(&id)
-	return id, err
+type CreateWalletParams struct {
+	Blockchain string `json:"blockchain"`
+	Address    string `json:"address"`
+	PublicKey  string `json:"public_key"`
+	PrivateKey string `json:"private_key"`
+}
+
+func (q *Queries) CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, createWallet,
+		arg.Blockchain,
+		arg.Address,
+		arg.PublicKey,
+		arg.PrivateKey,
+	)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.Blockchain,
+		&i.Address,
+		&i.PublicKey,
+		&i.PrivateKey,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

@@ -2,34 +2,38 @@ package main
 
 import (
 	"log"
+	"os"
 
-	"github.com/angpaoprw/cryptocurrency/cryptocurrency"
-	"github.com/angpaoprw/cryptocurrency/i18n"
+	"github.com/angpaoprw/cryptocurrency/controller"
+	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
+	"github.com/angpaoprw/cryptocurrency/migration"
+	"github.com/angpaoprw/cryptocurrency/server"
+	"github.com/bytedance/gopkg/util/logger"
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
+func init() {
+	if os.Getenv("ENV") != "production" && os.Getenv("ENV") != "staging" {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Warning: Could not load .env file:", err)
+			log.Println("Using system environment variables")
+		} else {
+			log.Println(".env file loaded successfully")
+		}
+	}
+}
+
 func main() {
-	// Initialize i18n
-	if err := i18n.Init(); err != nil {
-		log.Fatal("Failed to initialize i18n:", err)
+	conn := db.Connect()
+	// Run database migrations
+	if err := migration.RunMigrations(conn); err != nil {
+		logger.Fatal("Failed to run database migrations", zap.Error(err))
 	}
 
-	new_wallet, err := cryptocurrency.CreateWallet()
-	if err != nil {
-		log.Fatal("Failed to create wallet:", err)
-	}
-	log.Println("Address:", new_wallet.Address)
-	log.Println("Private Key:", new_wallet.PrivateKeyHex())
-	log.Println("Public Key:", new_wallet.PublicKeyHex())
+	queries := db.NewStore(conn)
 
-	// Demo translations
-	log.Println("=== English ===")
-	log.Println(i18n.Translate("en", "welcome"))
-	log.Println(i18n.Translate("en", "wallet.created"))
-
-	log.Println("\n=== Thai ===")
-	log.Println(i18n.Translate("th", "welcome"))
-	log.Println(i18n.Translate("th", "wallet.created"))
-
-	log.Println("\n=== Supported Languages ===")
-	log.Println(i18n.SupportedLanguages())
+	new_controller := controller.NewController(queries)
+	app := server.NewServer(new_controller)
+	app.Start()
 }

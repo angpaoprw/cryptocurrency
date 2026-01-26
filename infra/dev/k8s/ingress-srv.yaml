@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-cryptocurrency-service
+  namespace: staging
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "9999"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "9999"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.cryptocurrency.staging.tplpoker.com
+      secretName: staging-cryptocurrency-tplpoker-com
+  rules:
+    - host: api.cryptocurrency.staging.tplpoker.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cryptocurrency-srv
+                port:
+                  number: 5000
