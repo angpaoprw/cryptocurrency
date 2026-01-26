@@ -11,6 +11,8 @@ import (
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+
+	_ "github.com/angpaoprw/cryptocurrency/docs" // This is required for swagger
 )
 
 func init() {
@@ -24,6 +26,20 @@ func init() {
 	}
 }
 
+// @title Cryptocurrency API
+// @version 1.0
+// @description This is a cryptocurrency wallet and blockchain API server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@cryptocurrency.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:5000
+// @BasePath /v1
+// @schemes http https
 func main() {
 	conn := db.Connect()
 	// Run database migrations

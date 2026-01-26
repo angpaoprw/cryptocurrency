@@ -1,0 +1,48 @@
+basePath: /v1
+host: localhost:5000
+info:
+  contact:
+    email: support@cryptocurrency.com
+    name: API Support
+  description: This is a cryptocurrency wallet and blockchain API server.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Cryptocurrency API
+  version: "1.0"
+paths:
+  /callback/alchemy:
+    get:
+      consumes:
+      - application/json
+      description: Handle webhook callbacks from Alchemy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alchemy Callback
+          schema:
+            type: string
+      summary: Alchemy Webhook Callback
+      tags:
+      - Callback
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the server is running and healthy
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Server is healthy
+          schema:
+            type: string
+      summary: Health Check
+      tags:
+      - Health
+schemes:
+- http
+- https
+swagger: "2.0"
