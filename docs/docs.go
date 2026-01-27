@@ -24,7 +24,7 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/callback/alchemy": {
-            "get": {
+            "post": {
                 "description": "Handle webhook callbacks from Alchemy",
                 "consumes": [
                     "application/json"
@@ -38,9 +38,111 @@ const docTemplate = `{
                 "summary": "Alchemy Webhook Callback",
                 "responses": {
                     "200": {
-                        "description": "Alchemy Callback",
+                        "description": "Success response",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/deposit/request": {
+            "post": {
+                "description": "Assigns a hot wallet to customer for deposit and creates pending request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Deposit"
+                ],
+                "summary": "Create a deposit request for a customer",
+                "parameters": [
+                    {
+                        "description": "Deposit request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateDepositRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateDepositResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/deposit/request/{id}": {
+            "get": {
+                "description": "Check the status of a deposit request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Deposit"
+                ],
+                "summary": "Get deposit request status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Deposit Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.DepositRequestStatusResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -66,6 +168,104 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "controller.CreateDepositRequestInput": {
+            "type": "object",
+            "properties": {
+                "customer_id": {
+                    "type": "string"
+                },
+                "expected_amount": {
+                    "type": "number"
+                },
+                "expiration_minutes": {
+                    "type": "integer"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.CreateDepositResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "deposit_address": {
+                    "type": "string"
+                },
+                "expected_amount": {
+                    "type": "number"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "expires_in_seconds": {
+                    "type": "integer"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.DepositRequestStatusResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "deposit_address": {
+                    "type": "string"
+                },
+                "expected_amount": {
+                    "type": "number"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "received_amount": {
+                    "type": "number"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
                 }
             }
         }

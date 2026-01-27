@@ -5,17 +5,66 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+type DepositRequest struct {
+	ID              uuid.UUID      `json:"id"`
+	CustomerID      string         `json:"customer_id"`
+	WalletID        uuid.UUID      `json:"wallet_id"`
+	AssignedAddress string         `json:"assigned_address"`
+	Network         string         `json:"network"`
+	Token           string         `json:"token"`
+	ExpectedAmount  sql.NullString `json:"expected_amount"`
+	ReceivedAmount  sql.NullString `json:"received_amount"`
+	Status          string         `json:"status"`
+	TransactionID   uuid.NullUUID  `json:"transaction_id"`
+	ExpiresAt       sql.NullTime   `json:"expires_at"`
+	CompletedAt     sql.NullTime   `json:"completed_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type Transaction struct {
+	ID              uuid.UUID      `json:"id"`
+	WalletID        uuid.NullUUID  `json:"wallet_id"`
+	WebhookID       string         `json:"webhook_id"`
+	EventID         string         `json:"event_id"`
+	Network         string         `json:"network"`
+	TransactionHash string         `json:"transaction_hash"`
+	BlockNumber     string         `json:"block_number"`
+	FromAddress     string         `json:"from_address"`
+	ToAddress       string         `json:"to_address"`
+	Value           string         `json:"value"`
+	Asset           string         `json:"asset"`
+	Category        string         `json:"category"`
+	TransactionType sql.NullString `json:"transaction_type"`
+	Status          sql.NullString `json:"status"`
+	IsMatched       sql.NullBool   `json:"is_matched"`
+	GasFee          sql.NullString `json:"gas_fee"`
+	Confirmations   sql.NullInt32  `json:"confirmations"`
+	ContractAddress sql.NullString `json:"contract_address"`
+	Decimals        sql.NullInt32  `json:"decimals"`
+	RawValue        sql.NullString `json:"raw_value"`
+	BlockTimestamp  string         `json:"block_timestamp"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
 type Wallet struct {
-	ID         uuid.UUID `json:"id"`
-	Blockchain string    `json:"blockchain"`
-	Address    string    `json:"address"`
-	PublicKey  string    `json:"public_key"`
-	PrivateKey string    `json:"private_key"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         uuid.UUID      `json:"id"`
+	WalletType string         `json:"wallet_type"`
+	Blockchain string         `json:"blockchain"`
+	Token      string         `json:"token"`
+	Address    string         `json:"address"`
+	PublicKey  string         `json:"public_key"`
+	PrivateKey string         `json:"private_key"`
+	Balance    sql.NullString `json:"balance"`
+	IsActive   sql.NullBool   `json:"is_active"`
+	LastSyncAt sql.NullTime   `json:"last_sync_at"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
 }

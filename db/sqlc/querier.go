@@ -6,10 +6,41 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CancelDepositRequest(ctx context.Context, id uuid.UUID) (DepositRequest, error)
+	CreateDepositRequest(ctx context.Context, arg CreateDepositRequestParams) (DepositRequest, error)
+	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
+	DeactivateWallet(ctx context.Context, id uuid.UUID) error
+	DeleteTransaction(ctx context.Context, id uuid.UUID) error
+	ExpireDepositRequests(ctx context.Context) error
+	GetActiveWallets(ctx context.Context) ([]Wallet, error)
+	GetDepositRequest(ctx context.Context, id uuid.UUID) (DepositRequest, error)
+	GetDepositRequestByCustomer(ctx context.Context, arg GetDepositRequestByCustomerParams) ([]DepositRequest, error)
+	GetDepositsByWallet(ctx context.Context, arg GetDepositsByWalletParams) ([]Transaction, error)
+	GetPendingDepositByAddress(ctx context.Context, assignedAddress string) (DepositRequest, error)
+	GetTransaction(ctx context.Context, id uuid.UUID) (Transaction, error)
+	GetTransactionByEventId(ctx context.Context, eventID string) (Transaction, error)
+	GetTransactionByHash(ctx context.Context, transactionHash string) (Transaction, error)
+	GetWallet(ctx context.Context, id uuid.UUID) (Wallet, error)
+	GetWalletByAddress(ctx context.Context, address string) (Wallet, error)
+	GetWalletByNetworkAndToken(ctx context.Context, arg GetWalletByNetworkAndTokenParams) (Wallet, error)
+	GetWalletsByType(ctx context.Context, walletType string) ([]Wallet, error)
+	GetWithdrawalsByWallet(ctx context.Context, arg GetWithdrawalsByWalletParams) ([]Transaction, error)
+	ListPendingDeposits(ctx context.Context) ([]DepositRequest, error)
+	ListTransactionsByAddress(ctx context.Context, arg ListTransactionsByAddressParams) ([]Transaction, error)
+	ListTransactionsByFromAddress(ctx context.Context, arg ListTransactionsByFromAddressParams) ([]Transaction, error)
+	ListTransactionsByToAddress(ctx context.Context, arg ListTransactionsByToAddressParams) ([]Transaction, error)
+	ListTransactionsByWallet(ctx context.Context, arg ListTransactionsByWalletParams) ([]Transaction, error)
+	ListUnmatchedTransactions(ctx context.Context, arg ListUnmatchedTransactionsParams) ([]Transaction, error)
+	ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wallet, error)
+	UpdateDepositRequestStatus(ctx context.Context, arg UpdateDepositRequestStatusParams) (DepositRequest, error)
+	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) (Transaction, error)
+	UpdateWalletBalance(ctx context.Context, arg UpdateWalletBalanceParams) (Wallet, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
 	"github.com/angpaoprw/cryptocurrency/controller"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
+	"github.com/angpaoprw/cryptocurrency/logger"
 	"github.com/angpaoprw/cryptocurrency/migration"
 	"github.com/angpaoprw/cryptocurrency/server"
-	"github.com/bytedance/gopkg/util/logger"
+	"github.com/angpaoprw/cryptocurrency/service"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
@@ -24,6 +26,9 @@ func init() {
 			log.Println(".env file loaded successfully")
 		}
 	}
+
+	// Initialize logger
+	logger.InitLogger()
 }
 
 // @title Cryptocurrency API
@@ -45,7 +50,21 @@ func main() {
 		logger.Fatal("Failed to run database migrations", zap.Error(err))
 	}
 
+	err := logger.InitLogger()
+	if err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+
 	queries := db.NewStore(conn)
+
+	// Start deposit expiration service (checks every 5 seconds)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	expirationService := service.NewDepositExpirationService(queries)
+	go expirationService.Start(ctx)
+
+	logger.Info("Deposit expiration service started (3 minute timeout, checks every 5 seconds)")
 
 	new_controller := controller.NewController(queries)
 	app := server.NewServer(new_controller)

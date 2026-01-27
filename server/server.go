@@ -50,6 +50,7 @@ func (s *App) Start() error {
 
 	//setting up routes
 	s.callbackRoute()
+	s.depositRoute()
 
 	port := os.Getenv("PORT")
 	if port == "" {

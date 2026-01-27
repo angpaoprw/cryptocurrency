@@ -1,4 +1,68 @@
 basePath: /v1
+definitions:
+  controller.CreateDepositRequestInput:
+    properties:
+      customer_id:
+        type: string
+      expected_amount:
+        type: number
+      expiration_minutes:
+        type: integer
+      network:
+        type: string
+      token:
+        type: string
+    type: object
+  controller.CreateDepositResponse:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      deposit_address:
+        type: string
+      expected_amount:
+        type: number
+      expires_at:
+        type: string
+      expires_in_seconds:
+        type: integer
+      network:
+        type: string
+      request_id:
+        type: string
+      status:
+        type: string
+      token:
+        type: string
+    type: object
+  controller.DepositRequestStatusResponse:
+    properties:
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      deposit_address:
+        type: string
+      expected_amount:
+        type: number
+      expires_at:
+        type: string
+      network:
+        type: string
+      received_amount:
+        type: number
+      request_id:
+        type: string
+      status:
+        type: string
+      token:
+        type: string
+      transaction_id:
+        type: string
+    type: object
 info:
   contact:
     email: support@cryptocurrency.com
@@ -12,7 +76,7 @@ info:
   version: "1.0"
 paths:
   /callback/alchemy:
-    get:
+    post:
       consumes:
       - application/json
       description: Handle webhook callbacks from Alchemy
@@ -20,12 +84,82 @@ paths:
       - application/json
       responses:
         "200":
-          description: Alchemy Callback
+          description: Success response
           schema:
-            type: string
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
       summary: Alchemy Webhook Callback
       tags:
       - Callback
+  /deposit/request:
+    post:
+      consumes:
+      - application/json
+      description: Assigns a hot wallet to customer for deposit and creates pending
+        request
+      parameters:
+      - description: Deposit request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateDepositRequestInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.CreateDepositResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a deposit request for a customer
+      tags:
+      - Deposit
+  /deposit/request/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Check the status of a deposit request
+      parameters:
+      - description: Deposit Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.DepositRequestStatusResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get deposit request status
+      tags:
+      - Deposit
   /health:
     get:
       consumes:
