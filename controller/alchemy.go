@@ -3,9 +3,13 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"os"
 
+	"github.com/angpaoprw/cryptocurrency/api"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
 	"github.com/angpaoprw/cryptocurrency/logger"
+	"github.com/angpaoprw/cryptocurrency/webhook"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -20,11 +24,33 @@ import (
 // @Produce json
 // @Success 200 {object} map[string]interface{} "Success response"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Invalid signature"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /callback/alchemy [post]
 func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 	body := c.Body()
 	logger.Info("Received Alchemy Callback", zap.String("body", string(body)))
+
+	// Validate webhook signature
+	signature := c.Get("X-Alchemy-Signature")
+	signingKey := os.Getenv("ALCHEMY_WEBHOOK_SIGNING_KEY")
+
+	if signingKey == "" {
+		logger.Error("ALCHEMY_WEBHOOK_SIGNING_KEY not configured")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Webhook signing key not configured",
+		})
+	}
+
+	if !webhook.ValidateAlchemySignature(body, signature, signingKey) {
+		logger.Warn("Invalid webhook signature",
+			zap.String("signature", signature),
+			zap.String("from_ip", c.IP()),
+		)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid webhook signature",
+		})
+	}
 
 	var webhook AlchemyWebhook
 	if err := json.Unmarshal(body, &webhook); err != nil {
@@ -195,5 +221,86 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Webhook processed successfully",
+	})
+}
+
+// WebhookStatus godoc
+// @Summary Get webhook status and monitoring information
+// @Description Returns detailed information about the Alchemy webhook registration status
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{} "Failed to retrieve webhook status"
+// @Router /admin/webhooks/status [get]
+func (s *Controller) WebhookStatus(c *fiber.Ctx) error {
+	webhookBaseURL := os.Getenv("WEBHOOK_BASE_URL")
+	notifyAPIKey := os.Getenv("ALCHEMY_NOTIFY_API_KEY")
+
+	if webhookBaseURL == "" || notifyAPIKey == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Webhook configuration not set",
+		})
+	}
+
+	alchemyClient := api.NewAlchemyWithNotify("", notifyAPIKey)
+	webhookURL := fmt.Sprintf("%s/v1/callback/alchemy", webhookBaseURL)
+
+	// Try to get the webhook (assumes ETH_MAINNET for now, empty addresses since we're just checking status)
+	webhookData, err := alchemyClient.GetOrCreateWebhook(webhookURL, "ETH_MAINNET", []string{})
+	if err != nil {
+		logger.Error("Failed to get webhook", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to retrieve webhook: %v", err),
+		})
+	}
+
+	// Get webhook details including address count
+	webhookDetails, err := alchemyClient.GetWebhookDetails(webhookData.ID)
+	if err != nil {
+		logger.Error("Failed to get webhook details", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to retrieve webhook details: %v", err),
+		})
+	}
+
+	// Get total registrations from database
+	totalRegistrations, err := s.sql.CountWebhookRegistrationsByWebhookID(c.Context(), webhookData.ID)
+	if err != nil {
+		logger.Error("Failed to count webhook registrations", zap.Error(err))
+		totalRegistrations = 0
+	}
+
+	// Get all active registrations for last activity timestamp
+	registrations, err := s.sql.GetWebhookRegistrationsByWebhookID(c.Context(), webhookData.ID)
+	var lastRegisteredAt string
+	if err == nil && len(registrations) > 0 {
+		lastRegisteredAt = registrations[0].RegisteredAt.Format("2006-01-02 15:04:05")
+	}
+
+	currentAddressCount := len(webhookDetails.Addresses)
+	availableCapacity := WebhookAddressLimit - currentAddressCount
+	usagePercentage := float64(currentAddressCount) / float64(WebhookAddressLimit) * 100
+
+	warningMessage := ""
+	if currentAddressCount >= WebhookAddressWarnLimit {
+		warningMessage = fmt.Sprintf("WARNING: Webhook is at %.1f%% capacity (%d/%d addresses). Approaching limit!", usagePercentage, currentAddressCount, WebhookAddressLimit)
+	}
+
+	return c.JSON(fiber.Map{
+		"webhook_id":             webhookData.ID,
+		"webhook_url":            webhookData.WebhookURL,
+		"network":                webhookData.Network,
+		"webhook_type":           webhookData.WebhookType,
+		"is_active":              webhookDetails.IsActive,
+		"current_addresses":      currentAddressCount,
+		"address_limit":          WebhookAddressLimit,
+		"available_capacity":     availableCapacity,
+		"usage_percentage":       fmt.Sprintf("%.2f%%", usagePercentage),
+		"registrations_in_db":    totalRegistrations,
+		"last_registered_at":     lastRegisteredAt,
+		"signing_key_configured": os.Getenv("ALCHEMY_WEBHOOK_SIGNING_KEY") != "",
+		"warning":                warningMessage,
+		"status":                 "operational",
 	})
 }

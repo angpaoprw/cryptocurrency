@@ -11,6 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
+type BlockchainNetwork struct {
+	ID          uuid.UUID      `json:"id"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	ChainID     int32          `json:"chain_id"`
+	Explorer    string         `json:"explorer"`
+	Description sql.NullString `json:"description"`
+	IsActive    bool           `json:"is_active"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
 type DepositRequest struct {
 	ID              uuid.UUID      `json:"id"`
 	CustomerID      string         `json:"customer_id"`
@@ -24,6 +36,20 @@ type DepositRequest struct {
 	TransactionID   uuid.NullUUID  `json:"transaction_id"`
 	ExpiresAt       sql.NullTime   `json:"expires_at"`
 	CompletedAt     sql.NullTime   `json:"completed_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type Token struct {
+	ID              uuid.UUID      `json:"id"`
+	Code            string         `json:"code"`
+	Name            string         `json:"name"`
+	Symbol          string         `json:"symbol"`
+	Decimals        int32          `json:"decimals"`
+	ContractAddress sql.NullString `json:"contract_address"`
+	NetworkCode     string         `json:"network_code"`
+	TokenType       string         `json:"token_type"`
+	IsActive        bool           `json:"is_active"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 }
@@ -67,4 +93,16 @@ type Wallet struct {
 	LastSyncAt sql.NullTime   `json:"last_sync_at"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
+}
+
+type WebhookRegistration struct {
+	ID               uuid.UUID `json:"id"`
+	WalletID         uuid.UUID `json:"wallet_id"`
+	AlchemyWebhookID string    `json:"alchemy_webhook_id"`
+	Address          string    `json:"address"`
+	Network          string    `json:"network"`
+	IsActive         bool      `json:"is_active"`
+	RegisteredAt     time.Time `json:"registered_at"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }

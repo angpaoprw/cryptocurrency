@@ -23,6 +23,445 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/networks": {
+            "get": {
+                "description": "Returns a list of supported blockchain networks from database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get supported networks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controller.NetworkInfo"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/networks/{network_code}/tokens": {
+            "get": {
+                "description": "Returns a list of tokens available on a specific blockchain network",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get tokens by network",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Network code (e.g., ETH_MAINNET)",
+                        "name": "network_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controller.TokenInfo"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tokens": {
+            "get": {
+                "description": "Returns a list of all active tokens across all networks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get all active tokens",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controller.TokenInfo"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallets": {
+            "get": {
+                "description": "Retrieves a list of all wallets with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all wallets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Number of results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by wallet type (hot, warm, cold)",
+                        "name": "wallet_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ListWalletsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new wallet and optionally registers it with Alchemy webhook. Set register_webhook to false to skip webhook registration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create a new wallet with optional webhook registration",
+                "parameters": [
+                    {
+                        "description": "Wallet creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWalletRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWalletResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Webhook registration or wallet creation failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallets/import": {
+            "post": {
+                "description": "Imports an existing wallet address into the database and optionally registers it with Alchemy webhook. Use this for addresses that already exist on the blockchain.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Import an existing wallet address with optional webhook registration",
+                "parameters": [
+                    {
+                        "description": "Import wallet request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.ImportWalletRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWalletResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Webhook registration or wallet import failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallets/{id}": {
+            "get": {
+                "description": "Retrieves wallet information by wallet ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get wallet by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.WalletResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Wallet not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates wallet properties like wallet type or active status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update wallet",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update wallet request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.UpdateWalletRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.WalletResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Wallet not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/webhooks/bootstrap": {
+            "post": {
+                "description": "Registers all existing hot wallets without webhook registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Bootstrap existing wallets to webhook",
+                "parameters": [
+                    {
+                        "description": "Bootstrap request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.BootstrapWebhooksRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BootstrapWebhooksResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Bootstrap failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/webhooks/status": {
+            "get": {
+                "description": "Returns detailed information about the Alchemy webhook registration status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get webhook status and monitoring information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve webhook status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/callback/alchemy": {
             "post": {
                 "description": "Handle webhook callbacks from Alchemy",
@@ -46,6 +485,13 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid signature",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -173,6 +619,44 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controller.BootstrapWebhooksRequest": {
+            "type": "object",
+            "properties": {
+                "network": {
+                    "type": "string",
+                    "example": "ETH_MAINNET"
+                }
+            }
+        },
+        "controller.BootstrapWebhooksResponse": {
+            "type": "object",
+            "properties": {
+                "already_registered": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "failed_addresses": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "successfully_added": {
+                    "type": "integer"
+                },
+                "total_wallets": {
+                    "type": "integer"
+                },
+                "webhook_id": {
+                    "type": "string"
+                }
+            }
+        },
         "controller.CreateDepositRequestInput": {
             "type": "object",
             "properties": {
@@ -228,6 +712,60 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.CreateWalletRequest": {
+            "type": "object",
+            "properties": {
+                "network": {
+                    "type": "string",
+                    "example": "ETH_MAINNET"
+                },
+                "register_webhook": {
+                    "description": "Optional: defaults to true if not provided",
+                    "type": "boolean",
+                    "example": true
+                },
+                "token": {
+                    "type": "string",
+                    "example": "ETH"
+                },
+                "wallet_type": {
+                    "type": "string",
+                    "example": "hot"
+                }
+            }
+        },
+        "controller.CreateWalletResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "network_info": {
+                    "$ref": "#/definitions/controller.NetworkInfo"
+                },
+                "registered_at": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "token_info": {
+                    "$ref": "#/definitions/controller.TokenInfo"
+                },
+                "wallet_type": {
+                    "type": "string"
+                },
+                "webhook_id": {
+                    "type": "string"
+                }
+            }
+        },
         "controller.DepositRequestStatusResponse": {
             "type": "object",
             "properties": {
@@ -265,6 +803,143 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "transaction_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.ImportWalletRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+                },
+                "network": {
+                    "type": "string",
+                    "example": "ETH_MAINNET"
+                },
+                "register_webhook": {
+                    "description": "Optional: defaults to true if not provided",
+                    "type": "boolean",
+                    "example": true
+                },
+                "token": {
+                    "type": "string",
+                    "example": "ETH"
+                },
+                "wallet_type": {
+                    "type": "string",
+                    "example": "hot"
+                }
+            }
+        },
+        "controller.ListWalletsResponse": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer"
+                },
+                "wallets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.WalletResponse"
+                    }
+                }
+            }
+        },
+        "controller.NetworkInfo": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "explorer": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.TokenInfo": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "decimals": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "network_code": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.UpdateWalletRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "wallet_type": {
+                    "type": "string",
+                    "example": "warm"
+                }
+            }
+        },
+        "controller.WalletResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "balance": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "network_info": {
+                    "$ref": "#/definitions/controller.NetworkInfo"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "token_info": {
+                    "$ref": "#/definitions/controller.TokenInfo"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "wallet_type": {
                     "type": "string"
                 }
             }

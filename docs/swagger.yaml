@@ -1,5 +1,30 @@
 basePath: /v1
 definitions:
+  controller.BootstrapWebhooksRequest:
+    properties:
+      network:
+        example: ETH_MAINNET
+        type: string
+    type: object
+  controller.BootstrapWebhooksResponse:
+    properties:
+      already_registered:
+        type: integer
+      failed:
+        type: integer
+      failed_addresses:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      successfully_added:
+        type: integer
+      total_wallets:
+        type: integer
+      webhook_id:
+        type: string
+    type: object
   controller.CreateDepositRequestInput:
     properties:
       customer_id:
@@ -36,6 +61,43 @@ definitions:
       token:
         type: string
     type: object
+  controller.CreateWalletRequest:
+    properties:
+      network:
+        example: ETH_MAINNET
+        type: string
+      register_webhook:
+        description: 'Optional: defaults to true if not provided'
+        example: true
+        type: boolean
+      token:
+        example: ETH
+        type: string
+      wallet_type:
+        example: hot
+        type: string
+    type: object
+  controller.CreateWalletResponse:
+    properties:
+      address:
+        type: string
+      id:
+        type: string
+      network:
+        type: string
+      network_info:
+        $ref: '#/definitions/controller.NetworkInfo'
+      registered_at:
+        type: string
+      token:
+        type: string
+      token_info:
+        $ref: '#/definitions/controller.TokenInfo'
+      wallet_type:
+        type: string
+      webhook_id:
+        type: string
+    type: object
   controller.DepositRequestStatusResponse:
     properties:
       completed_at:
@@ -63,6 +125,98 @@ definitions:
       transaction_id:
         type: string
     type: object
+  controller.ImportWalletRequest:
+    properties:
+      address:
+        example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+        type: string
+      network:
+        example: ETH_MAINNET
+        type: string
+      register_webhook:
+        description: 'Optional: defaults to true if not provided'
+        example: true
+        type: boolean
+      token:
+        example: ETH
+        type: string
+      wallet_type:
+        example: hot
+        type: string
+    type: object
+  controller.ListWalletsResponse:
+    properties:
+      total:
+        type: integer
+      wallets:
+        items:
+          $ref: '#/definitions/controller.WalletResponse'
+        type: array
+    type: object
+  controller.NetworkInfo:
+    properties:
+      chain_id:
+        type: integer
+      code:
+        type: string
+      description:
+        type: string
+      explorer:
+        type: string
+      name:
+        type: string
+    type: object
+  controller.TokenInfo:
+    properties:
+      code:
+        type: string
+      contract_address:
+        type: string
+      decimals:
+        type: integer
+      name:
+        type: string
+      network_code:
+        type: string
+      symbol:
+        type: string
+      token_type:
+        type: string
+    type: object
+  controller.UpdateWalletRequest:
+    properties:
+      is_active:
+        example: false
+        type: boolean
+      wallet_type:
+        example: warm
+        type: string
+    type: object
+  controller.WalletResponse:
+    properties:
+      address:
+        type: string
+      balance:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      network:
+        type: string
+      network_info:
+        $ref: '#/definitions/controller.NetworkInfo'
+      token:
+        type: string
+      token_info:
+        $ref: '#/definitions/controller.TokenInfo'
+      updated_at:
+        type: string
+      wallet_type:
+        type: string
+    type: object
 info:
   contact:
     email: support@cryptocurrency.com
@@ -75,6 +229,305 @@ info:
   title: Cryptocurrency API
   version: "1.0"
 paths:
+  /admin/networks:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of supported blockchain networks from database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controller.NetworkInfo'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get supported networks
+      tags:
+      - Admin
+  /admin/networks/{network_code}/tokens:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of tokens available on a specific blockchain network
+      parameters:
+      - description: Network code (e.g., ETH_MAINNET)
+        in: path
+        name: network_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controller.TokenInfo'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get tokens by network
+      tags:
+      - Admin
+  /admin/tokens:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all active tokens across all networks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controller.TokenInfo'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all active tokens
+      tags:
+      - Admin
+  /admin/wallets:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all wallets with pagination
+      parameters:
+      - default: 50
+        description: Number of results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by wallet type (hot, warm, cold)
+        in: query
+        name: wallet_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.ListWalletsResponse'
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all wallets
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Creates a new wallet and optionally registers it with Alchemy webhook.
+        Set register_webhook to false to skip webhook registration.
+      parameters:
+      - description: Wallet creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateWalletRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controller.CreateWalletResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Webhook registration or wallet creation failed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new wallet with optional webhook registration
+      tags:
+      - Admin
+  /admin/wallets/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves wallet information by wallet ID
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.WalletResponse'
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get wallet by ID
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Updates wallet properties like wallet type or active status
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update wallet request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.UpdateWalletRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.WalletResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update wallet
+      tags:
+      - Admin
+  /admin/wallets/import:
+    post:
+      consumes:
+      - application/json
+      description: Imports an existing wallet address into the database and optionally
+        registers it with Alchemy webhook. Use this for addresses that already exist
+        on the blockchain.
+      parameters:
+      - description: Import wallet request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.ImportWalletRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controller.CreateWalletResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Webhook registration or wallet import failed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Import an existing wallet address with optional webhook registration
+      tags:
+      - Admin
+  /admin/webhooks/bootstrap:
+    post:
+      consumes:
+      - application/json
+      description: Registers all existing hot wallets without webhook registration
+      parameters:
+      - description: Bootstrap request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.BootstrapWebhooksRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BootstrapWebhooksResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Bootstrap failed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Bootstrap existing wallets to webhook
+      tags:
+      - Admin
+  /admin/webhooks/status:
+    get:
+      consumes:
+      - application/json
+      description: Returns detailed information about the Alchemy webhook registration
+        status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve webhook status
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get webhook status and monitoring information
+      tags:
+      - Admin
   /callback/alchemy:
     post:
       consumes:
@@ -90,6 +543,11 @@ paths:
             type: object
         "400":
           description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid signature
           schema:
             additionalProperties: true
             type: object

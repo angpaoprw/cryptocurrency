@@ -79,6 +79,16 @@ func (q *Queries) DeactivateWallet(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteWallet = `-- name: DeleteWallet :exec
+DELETE FROM wallets
+WHERE id = $1
+`
+
+func (q *Queries) DeleteWallet(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteWallet, id)
+	return err
+}
+
 const getActiveWallets = `-- name: GetActiveWallets :many
 SELECT id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at FROM wallets
 WHERE is_active = true
@@ -290,6 +300,39 @@ func (q *Queries) ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wal
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateWallet = `-- name: UpdateWallet :one
+UPDATE wallets
+SET wallet_type = $2, is_active = $3, updated_at = NOW()
+WHERE id = $1
+RETURNING id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at
+`
+
+type UpdateWalletParams struct {
+	ID         uuid.UUID    `json:"id"`
+	WalletType string       `json:"wallet_type"`
+	IsActive   sql.NullBool `json:"is_active"`
+}
+
+func (q *Queries) UpdateWallet(ctx context.Context, arg UpdateWalletParams) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, updateWallet, arg.ID, arg.WalletType, arg.IsActive)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.WalletType,
+		&i.Blockchain,
+		&i.Token,
+		&i.Address,
+		&i.PublicKey,
+		&i.PrivateKey,
+		&i.Balance,
+		&i.IsActive,
+		&i.LastSyncAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateWalletBalance = `-- name: UpdateWalletBalance :one

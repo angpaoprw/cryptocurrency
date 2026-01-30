@@ -47,7 +47,17 @@ SELECT * FROM wallets
 WHERE is_active = true
 ORDER BY created_at DESC;
 
+-- name: UpdateWallet :one
+UPDATE wallets
+SET wallet_type = $2, is_active = $3, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
 -- name: DeactivateWallet :exec
 UPDATE wallets
 SET is_active = false, updated_at = NOW()
+WHERE id = $1;
+
+-- name: DeleteWallet :exec
+DELETE FROM wallets
 WHERE id = $1;
