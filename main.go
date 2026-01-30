@@ -57,14 +57,19 @@ func main() {
 
 	queries := db.NewStore(conn)
 
-	// Start deposit expiration service (checks every 5 seconds)
+	// Start background services
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Start deposit expiration service (checks every 5 seconds)
 	expirationService := service.NewDepositExpirationService(queries)
 	go expirationService.Start(ctx)
-
 	logger.Info("Deposit expiration service started (3 minute timeout, checks every 5 seconds)")
+
+	// Start wallet balance sync service (checks every 30 seconds)
+	balanceSyncService := service.NewWalletBalanceSyncService(queries)
+	go balanceSyncService.Start(ctx)
+	logger.Info("Wallet balance sync service started (syncs every 30 seconds)")
 
 	new_controller := controller.NewController(queries)
 	app := server.NewServer(new_controller)
