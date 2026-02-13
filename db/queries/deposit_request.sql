@@ -47,12 +47,13 @@ WHERE status IN ('pending', 'partial')
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC;
 
--- name: ExpireDepositRequests :exec
+-- name: ExpireDepositRequests :many
 UPDATE deposit_requests
 SET status = 'expired', updated_at = NOW()
 WHERE status IN ('pending', 'partial')
   AND expires_at IS NOT NULL
-  AND expires_at < NOW();
+  AND expires_at < NOW()
+RETURNING *;
 
 -- name: CancelDepositRequest :one
 UPDATE deposit_requests

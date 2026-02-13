@@ -98,6 +98,42 @@ definitions:
       webhook_id:
         type: string
     type: object
+  controller.CreateWithdrawalRequestInput:
+    properties:
+      amount:
+        type: number
+      customer_id:
+        type: string
+      network:
+        type: string
+      notes:
+        type: string
+      to_address:
+        type: string
+      token:
+        type: string
+    type: object
+  controller.CreateWithdrawalResponse:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      estimated_fee:
+        type: string
+      network:
+        type: string
+      request_id:
+        type: string
+      status:
+        type: string
+      to_address:
+        type: string
+      token:
+        type: string
+    type: object
   controller.DepositRequestStatusResponse:
     properties:
       completed_at:
@@ -119,6 +155,35 @@ definitions:
       request_id:
         type: string
       status:
+        type: string
+      token:
+        type: string
+      transaction_id:
+        type: string
+    type: object
+  controller.GetWithdrawalResponse:
+    properties:
+      actual_amount:
+        type: number
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      error_message:
+        type: string
+      fee_amount:
+        type: number
+      network:
+        type: string
+      request_id:
+        type: string
+      requested_amount:
+        type: number
+      status:
+        type: string
+      to_address:
         type: string
       token:
         type: string
@@ -204,6 +269,8 @@ definitions:
         type: string
       is_active:
         type: boolean
+      native_balance:
+        type: string
       network:
         type: string
       network_info:
@@ -633,4 +700,133 @@ paths:
       summary: Health Check
       tags:
       - Health
+  /internal/deposit:
+    post:
+      consumes:
+      - application/json
+      description: Create a deposit request for internal services - sends notification
+        upon creation
+      parameters:
+      - description: Deposit request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateDepositRequestInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.CreateDepositResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a deposit request (internal service)
+      tags:
+      - Internal
+  /internal/deposit/{id}:
+    delete:
+      description: Cancel a pending or partial deposit request
+      parameters:
+      - description: Deposit Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cancel a deposit request (internal)
+      tags:
+      - Internal
+  /internal/withdrawal:
+    post:
+      consumes:
+      - application/json
+      description: Create a withdrawal request for a customer - automatically processed
+      parameters:
+      - description: Withdrawal request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateWithdrawalRequestInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.CreateWithdrawalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a withdrawal request (internal)
+      tags:
+      - Internal
+  /internal/withdrawal/{id}:
+    get:
+      description: Get the current status of a withdrawal request
+      parameters:
+      - description: Withdrawal Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetWithdrawalResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get withdrawal request status
+      tags:
+      - Internal
 swagger: "2.0"

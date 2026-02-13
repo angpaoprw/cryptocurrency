@@ -96,17 +96,51 @@ func (q *Queries) CreateDepositRequest(ctx context.Context, arg CreateDepositReq
 	return i, err
 }
 
-const expireDepositRequests = `-- name: ExpireDepositRequests :exec
+const expireDepositRequests = `-- name: ExpireDepositRequests :many
 UPDATE deposit_requests
 SET status = 'expired', updated_at = NOW()
 WHERE status IN ('pending', 'partial')
   AND expires_at IS NOT NULL
   AND expires_at < NOW()
+RETURNING id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
 `
 
-func (q *Queries) ExpireDepositRequests(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, expireDepositRequests)
-	return err
+func (q *Queries) ExpireDepositRequests(ctx context.Context) ([]DepositRequest, error) {
+	rows, err := q.db.QueryContext(ctx, expireDepositRequests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DepositRequest{}
+	for rows.Next() {
+		var i DepositRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.WalletID,
+			&i.AssignedAddress,
+			&i.Network,
+			&i.Token,
+			&i.ExpectedAmount,
+			&i.ReceivedAmount,
+			&i.Status,
+			&i.TransactionID,
+			&i.ExpiresAt,
+			&i.CompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getDepositRequest = `-- name: GetDepositRequest :one

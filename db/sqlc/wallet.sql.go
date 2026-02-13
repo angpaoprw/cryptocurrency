@@ -131,6 +131,89 @@ func (q *Queries) GetActiveWallets(ctx context.Context) ([]Wallet, error) {
 	return items, nil
 }
 
+const getAllWallets = `-- name: GetAllWallets :many
+SELECT id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at FROM wallets
+ORDER BY created_at ASC
+`
+
+func (q *Queries) GetAllWallets(ctx context.Context) ([]Wallet, error) {
+	rows, err := q.db.QueryContext(ctx, getAllWallets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Wallet{}
+	for rows.Next() {
+		var i Wallet
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletType,
+			&i.Blockchain,
+			&i.Token,
+			&i.Address,
+			&i.PublicKey,
+			&i.PrivateKey,
+			&i.Balance,
+			&i.IsActive,
+			&i.LastSyncAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAvailableWalletByNetworkAndToken = `-- name: GetAvailableWalletByNetworkAndToken :one
+SELECT w.id, w.wallet_type, w.blockchain, w.token, w.address, w.public_key, w.private_key, w.balance, w.is_active, w.last_sync_at, w.created_at, w.updated_at FROM wallets w
+WHERE w.blockchain = $1 
+  AND w.token = $2 
+  AND w.wallet_type = $3 
+  AND w.is_active = true
+  AND NOT EXISTS (
+    SELECT 1 FROM deposit_requests dr
+    WHERE dr.wallet_id = w.id
+      AND dr.status IN ('pending', 'partial')
+      AND (dr.expires_at IS NULL OR dr.expires_at > NOW())
+  )
+ORDER BY w.created_at ASC
+LIMIT 1
+`
+
+type GetAvailableWalletByNetworkAndTokenParams struct {
+	Blockchain string `json:"blockchain"`
+	Token      string `json:"token"`
+	WalletType string `json:"wallet_type"`
+}
+
+func (q *Queries) GetAvailableWalletByNetworkAndToken(ctx context.Context, arg GetAvailableWalletByNetworkAndTokenParams) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, getAvailableWalletByNetworkAndToken, arg.Blockchain, arg.Token, arg.WalletType)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.WalletType,
+		&i.Blockchain,
+		&i.Token,
+		&i.Address,
+		&i.PublicKey,
+		&i.PrivateKey,
+		&i.Balance,
+		&i.IsActive,
+		&i.LastSyncAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getWallet = `-- name: GetWallet :one
 SELECT id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at FROM wallets
 WHERE id = $1 LIMIT 1
@@ -195,6 +278,50 @@ type GetWalletByNetworkAndTokenParams struct {
 
 func (q *Queries) GetWalletByNetworkAndToken(ctx context.Context, arg GetWalletByNetworkAndTokenParams) (Wallet, error) {
 	row := q.db.QueryRowContext(ctx, getWalletByNetworkAndToken, arg.Blockchain, arg.Token, arg.WalletType)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.WalletType,
+		&i.Blockchain,
+		&i.Token,
+		&i.Address,
+		&i.PublicKey,
+		&i.PrivateKey,
+		&i.Balance,
+		&i.IsActive,
+		&i.LastSyncAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getWalletWithSufficientBalance = `-- name: GetWalletWithSufficientBalance :one
+SELECT w.id, w.wallet_type, w.blockchain, w.token, w.address, w.public_key, w.private_key, w.balance, w.is_active, w.last_sync_at, w.created_at, w.updated_at FROM wallets w
+WHERE w.blockchain = $1 
+  AND w.token = $2 
+  AND w.wallet_type = $3 
+  AND w.is_active = true
+  AND w.balance IS NOT NULL
+  AND CAST(w.balance AS DECIMAL(36, 18)) >= $4
+ORDER BY w.created_at ASC
+LIMIT 1
+`
+
+type GetWalletWithSufficientBalanceParams struct {
+	Blockchain string         `json:"blockchain"`
+	Token      string         `json:"token"`
+	WalletType string         `json:"wallet_type"`
+	Balance    sql.NullString `json:"balance"`
+}
+
+func (q *Queries) GetWalletWithSufficientBalance(ctx context.Context, arg GetWalletWithSufficientBalanceParams) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, getWalletWithSufficientBalance,
+		arg.Blockchain,
+		arg.Token,
+		arg.WalletType,
+		arg.Balance,
+	)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,
@@ -349,6 +476,38 @@ type UpdateWalletBalanceParams struct {
 
 func (q *Queries) UpdateWalletBalance(ctx context.Context, arg UpdateWalletBalanceParams) (Wallet, error) {
 	row := q.db.QueryRowContext(ctx, updateWalletBalance, arg.ID, arg.Balance)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.WalletType,
+		&i.Blockchain,
+		&i.Token,
+		&i.Address,
+		&i.PublicKey,
+		&i.PrivateKey,
+		&i.Balance,
+		&i.IsActive,
+		&i.LastSyncAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateWalletPrivateKey = `-- name: UpdateWalletPrivateKey :one
+UPDATE wallets
+SET private_key = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at
+`
+
+type UpdateWalletPrivateKeyParams struct {
+	ID         uuid.UUID `json:"id"`
+	PrivateKey string    `json:"private_key"`
+}
+
+func (q *Queries) UpdateWalletPrivateKey(ctx context.Context, arg UpdateWalletPrivateKeyParams) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, updateWalletPrivateKey, arg.ID, arg.PrivateKey)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,

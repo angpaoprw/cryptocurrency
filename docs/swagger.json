@@ -609,6 +609,196 @@
                     }
                 }
             }
+        },
+        "/internal/deposit": {
+            "post": {
+                "description": "Create a deposit request for internal services - sends notification upon creation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Create a deposit request (internal service)",
+                "parameters": [
+                    {
+                        "description": "Deposit request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateDepositRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateDepositResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/deposit/{id}": {
+            "delete": {
+                "description": "Cancel a pending or partial deposit request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Cancel a deposit request (internal)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Deposit Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/withdrawal": {
+            "post": {
+                "description": "Create a withdrawal request for a customer - automatically processed",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Create a withdrawal request (internal)",
+                "parameters": [
+                    {
+                        "description": "Withdrawal request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWithdrawalRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWithdrawalResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/withdrawal/{id}": {
+            "get": {
+                "description": "Get the current status of a withdrawal request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Get withdrawal request status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Withdrawal Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetWithdrawalResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -759,6 +949,61 @@
                 }
             }
         },
+        "controller.CreateWithdrawalRequestInput": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.CreateWithdrawalResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "estimated_fee": {
+                    "type": "string"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "controller.DepositRequestStatusResponse": {
             "type": "object",
             "properties": {
@@ -790,6 +1035,50 @@
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.GetWithdrawalResponse": {
+            "type": "object",
+            "properties": {
+                "actual_amount": {
+                    "type": "number"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "fee_amount": {
+                    "type": "number"
+                },
+                "network": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "requested_amount": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "to_address": {
                     "type": "string"
                 },
                 "token": {
@@ -916,6 +1205,9 @@
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "native_balance": {
+                    "type": "string"
                 },
                 "network": {
                     "type": "string"

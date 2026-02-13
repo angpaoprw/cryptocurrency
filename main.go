@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"log"
 	"os"
 
+	"github.com/angpaoprw/cryptocurrency/api"
 	"github.com/angpaoprw/cryptocurrency/controller"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
 	"github.com/angpaoprw/cryptocurrency/logger"
@@ -57,12 +59,38 @@ func main() {
 
 	queries := db.NewStore(conn)
 
+	// Initialize notification client
+	notificationServiceURL := os.Getenv("NOTIFICATION_SERVICE_URL")
+	if notificationServiceURL != "" {
+		logger.Info("Notification service configured", zap.String("url", notificationServiceURL))
+	} else {
+		logger.Warn("NOTIFICATION_SERVICE_URL not set - notifications will be disabled")
+	}
+	notificationClient := api.NewNotificationClient(notificationServiceURL, logger.GetLogger())
+
+	// Load and validate encryption key
+	encryptionKeyHex := os.Getenv("ENCRYPTION_KEY")
+	if encryptionKeyHex == "" {
+		logger.Fatal("ENCRYPTION_KEY environment variable is required for securing private keys")
+	}
+
+	encryptionKey, err := hex.DecodeString(encryptionKeyHex)
+	if err != nil {
+		logger.Fatal("Invalid ENCRYPTION_KEY format - must be hex encoded", zap.Error(err))
+	}
+
+	if len(encryptionKey) != 32 {
+		logger.Fatal("Invalid ENCRYPTION_KEY length - must be 32 bytes (64 hex characters)", zap.Int("length", len(encryptionKey)))
+	}
+
+	logger.Info("Encryption key loaded successfully", zap.Int("key_length_bytes", len(encryptionKey)))
+
 	// Start background services
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Start deposit expiration service (checks every 5 seconds)
-	expirationService := service.NewDepositExpirationService(queries)
+	expirationService := service.NewDepositExpirationService(queries, notificationClient)
 	go expirationService.Start(ctx)
 	logger.Info("Deposit expiration service started (3 minute timeout, checks every 5 seconds)")
 
@@ -71,7 +99,7 @@ func main() {
 	go balanceSyncService.Start(ctx)
 	logger.Info("Wallet balance sync service started (syncs every 30 seconds)")
 
-	new_controller := controller.NewController(queries)
+	new_controller := controller.NewController(queries, notificationClient, encryptionKey)
 	app := server.NewServer(new_controller)
 	app.Start()
 }

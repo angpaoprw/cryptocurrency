@@ -19,6 +19,7 @@ type Querier interface {
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 	CreateWebhookRegistration(ctx context.Context, arg CreateWebhookRegistrationParams) (WebhookRegistration, error)
+	CreateWithdrawalRequest(ctx context.Context, arg CreateWithdrawalRequestParams) (WithdrawalRequest, error)
 	DeactivateBlockchainNetwork(ctx context.Context, id uuid.UUID) error
 	DeactivateToken(ctx context.Context, id uuid.UUID) error
 	DeactivateWallet(ctx context.Context, id uuid.UUID) error
@@ -26,9 +27,11 @@ type Querier interface {
 	DeactivateWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) error
 	DeleteTransaction(ctx context.Context, id uuid.UUID) error
 	DeleteWallet(ctx context.Context, id uuid.UUID) error
-	ExpireDepositRequests(ctx context.Context) error
+	ExpireDepositRequests(ctx context.Context) ([]DepositRequest, error)
 	GetActiveWallets(ctx context.Context) ([]Wallet, error)
 	GetAllActiveWebhookRegistrations(ctx context.Context) ([]WebhookRegistration, error)
+	GetAllWallets(ctx context.Context) ([]Wallet, error)
+	GetAvailableWalletByNetworkAndToken(ctx context.Context, arg GetAvailableWalletByNetworkAndTokenParams) (Wallet, error)
 	GetBlockchainNetwork(ctx context.Context, id uuid.UUID) (BlockchainNetwork, error)
 	GetBlockchainNetworkByCode(ctx context.Context, code string) (BlockchainNetwork, error)
 	GetDepositRequest(ctx context.Context, id uuid.UUID) (DepositRequest, error)
@@ -43,17 +46,21 @@ type Querier interface {
 	GetWallet(ctx context.Context, id uuid.UUID) (Wallet, error)
 	GetWalletByAddress(ctx context.Context, address string) (Wallet, error)
 	GetWalletByNetworkAndToken(ctx context.Context, arg GetWalletByNetworkAndTokenParams) (Wallet, error)
+	GetWalletWithSufficientBalance(ctx context.Context, arg GetWalletWithSufficientBalanceParams) (Wallet, error)
 	GetWalletsByType(ctx context.Context, walletType string) ([]Wallet, error)
 	GetWalletsWithoutWebhookRegistration(ctx context.Context, walletType string) ([]Wallet, error)
 	GetWebhookRegistrationByAddress(ctx context.Context, address string) (WebhookRegistration, error)
 	GetWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) (WebhookRegistration, error)
 	GetWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) ([]WebhookRegistration, error)
+	GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (WithdrawalRequest, error)
+	GetWithdrawalRequestsByWallet(ctx context.Context, arg GetWithdrawalRequestsByWalletParams) ([]WithdrawalRequest, error)
 	GetWithdrawalsByWallet(ctx context.Context, arg GetWithdrawalsByWalletParams) ([]Transaction, error)
 	ListActiveBlockchainNetworks(ctx context.Context) ([]BlockchainNetwork, error)
 	ListAllActiveTokens(ctx context.Context) ([]Token, error)
 	ListAllBlockchainNetworks(ctx context.Context) ([]BlockchainNetwork, error)
 	ListAllTokens(ctx context.Context) ([]Token, error)
 	ListPendingDeposits(ctx context.Context) ([]DepositRequest, error)
+	ListPendingWithdrawals(ctx context.Context) ([]WithdrawalRequest, error)
 	ListTokensByNetwork(ctx context.Context, networkCode string) ([]Token, error)
 	ListTransactionsByAddress(ctx context.Context, arg ListTransactionsByAddressParams) ([]Transaction, error)
 	ListTransactionsByFromAddress(ctx context.Context, arg ListTransactionsByFromAddressParams) ([]Transaction, error)
@@ -61,12 +68,16 @@ type Querier interface {
 	ListTransactionsByWallet(ctx context.Context, arg ListTransactionsByWalletParams) ([]Transaction, error)
 	ListUnmatchedTransactions(ctx context.Context, arg ListUnmatchedTransactionsParams) ([]Transaction, error)
 	ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wallet, error)
+	ListWithdrawalRequestsByCustomer(ctx context.Context, arg ListWithdrawalRequestsByCustomerParams) ([]WithdrawalRequest, error)
 	UpdateBlockchainNetwork(ctx context.Context, arg UpdateBlockchainNetworkParams) (BlockchainNetwork, error)
 	UpdateDepositRequestStatus(ctx context.Context, arg UpdateDepositRequestStatusParams) (DepositRequest, error)
 	UpdateToken(ctx context.Context, arg UpdateTokenParams) (Token, error)
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) (Transaction, error)
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) (Wallet, error)
 	UpdateWalletBalance(ctx context.Context, arg UpdateWalletBalanceParams) (Wallet, error)
+	UpdateWalletPrivateKey(ctx context.Context, arg UpdateWalletPrivateKeyParams) (Wallet, error)
+	UpdateWithdrawalRequestFees(ctx context.Context, arg UpdateWithdrawalRequestFeesParams) (WithdrawalRequest, error)
+	UpdateWithdrawalRequestStatus(ctx context.Context, arg UpdateWithdrawalRequestStatusParams) (WithdrawalRequest, error)
 }
 
 var _ Querier = (*Queries)(nil)

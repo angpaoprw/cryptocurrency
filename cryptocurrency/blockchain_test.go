@@ -7,34 +7,6 @@ import (
 
 const wallet_address = "0xa1cc6701a88Cca21a1F694A1e081440c7cEbE073"
 
-// USDTToSmallestUnit converts USDT amount to smallest unit (6 decimals)
-// Example: 1.5 USDT -> 1500000
-func USDTToSmallestUnit(usdt float64) *big.Int {
-	// USDT has 6 decimals, so multiply by 1,000,000
-	multiplier := big.NewFloat(1e6)
-	amount := big.NewFloat(usdt)
-	result := new(big.Float).Mul(amount, multiplier)
-
-	// Convert to big.Int
-	resultInt := new(big.Int)
-	result.Int(resultInt)
-	return resultInt
-}
-
-// EtherToWei converts ETH/POL/BNB amount to Wei (18 decimals)
-// Example: 0.001 ETH -> 1000000000000000
-func EtherToWei(ether float64) *big.Int {
-	// ETH/POL/BNB has 18 decimals
-	multiplier := big.NewFloat(1e18)
-	amount := big.NewFloat(ether)
-	result := new(big.Float).Mul(amount, multiplier)
-
-	// Convert to big.Int
-	resultInt := new(big.Int)
-	result.Int(resultInt)
-	return resultInt
-}
-
 // TestGetBalance tests getting native token balance (ETH/MATIC/BNB)
 func TestGetBalance(t *testing.T) {
 	t.Skip("Skipping - requires RPC endpoint. Remove t.Skip() to run with real network")

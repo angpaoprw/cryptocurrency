@@ -137,6 +137,20 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 							zap.String("request_id", depositRequest.ID.String()),
 							zap.String("status", status),
 						)
+
+						// Send notification when deposit is completed
+						if status == "completed" && s.notificationClient != nil {
+							s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCompleted, map[string]interface{}{
+								"request_id":      depositRequest.ID.String(),
+								"transaction_id":  txID.UUID.String(),
+								"tx_hash":         activity.Hash,
+								"deposit_address": depositRequest.AssignedAddress,
+								"received_amount": receivedAmount.String(),
+								"network":         depositRequest.Network,
+								"token":           depositRequest.Token,
+								"status":          "completed",
+							})
+						}
 					}
 				} else {
 					// No matching deposit request - mark as unmatched

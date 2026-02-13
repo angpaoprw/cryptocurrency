@@ -52,6 +52,7 @@ func (s *App) Start() error {
 	s.callbackRoute()
 	s.depositRoute()
 	s.adminRoute()
+	s.internalRoute()
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -71,6 +71,26 @@ func (s *Controller) getTokenInfo(tokenCode, networkCode string) *TokenInfo {
 	}
 }
 
+// Helper function to get native token balance from blockchain
+func (s *Controller) getNativeBalance(networkCode, address string) string {
+	network, err := s.getNetworkConfig(networkCode)
+	if err != nil {
+		return "0"
+	}
+
+	client, err := cryptocurrency.NewClient(network)
+	if err != nil {
+		return "0"
+	}
+
+	balance, err := client.GetBalanceEther(address)
+	if err != nil {
+		return "0"
+	}
+
+	return fmt.Sprintf("%.18f", balance)
+}
+
 type CreateWalletRequest struct {
 	Network         string `json:"network" example:"ETH_MAINNET"`
 	Token           string `json:"token" example:"ETH"`
@@ -104,17 +124,18 @@ type UpdateWalletRequest struct {
 }
 
 type WalletResponse struct {
-	ID          string       `json:"id"`
-	Address     string       `json:"address"`
-	Network     string       `json:"network"`
-	NetworkInfo *NetworkInfo `json:"network_info,omitempty"`
-	Token       string       `json:"token"`
-	TokenInfo   *TokenInfo   `json:"token_info,omitempty"`
-	WalletType  string       `json:"wallet_type"`
-	Balance     string       `json:"balance"`
-	IsActive    bool         `json:"is_active"`
-	CreatedAt   string       `json:"created_at"`
-	UpdatedAt   string       `json:"updated_at"`
+	ID            string       `json:"id"`
+	Address       string       `json:"address"`
+	Network       string       `json:"network"`
+	NetworkInfo   *NetworkInfo `json:"network_info,omitempty"`
+	Token         string       `json:"token"`
+	TokenInfo     *TokenInfo   `json:"token_info,omitempty"`
+	WalletType    string       `json:"wallet_type"`
+	Balance       string       `json:"balance"`
+	NativeBalance string       `json:"native_balance"`
+	IsActive      bool         `json:"is_active"`
+	CreatedAt     string       `json:"created_at"`
+	UpdatedAt     string       `json:"updated_at"`
 }
 
 type ListWalletsResponse struct {
@@ -308,14 +329,23 @@ func (s *Controller) CreateWallet(c *fiber.Ctx) error {
 		logger.Info("Skipping webhook registration as requested")
 	}
 
-	// Step 3: Save wallet to database
+	// Step 3: Encrypt private key before saving
+	encryptedPrivateKey, err := s.encryptPrivateKey(wallet.PrivateKeyHex())
+	if err != nil {
+		logger.Error("Failed to encrypt private key", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to secure wallet private key",
+		})
+	}
+
+	// Step 4: Save wallet to database
 	dbWallet, err := s.sql.CreateWallet(c.Context(), db.CreateWalletParams{
 		WalletType: req.WalletType,
 		Blockchain: req.Network,
 		Token:      req.Token,
 		Address:    wallet.Address,
 		PublicKey:  wallet.PublicKeyHex(),
-		PrivateKey: wallet.PrivateKeyHex(),
+		PrivateKey: encryptedPrivateKey,
 		Balance:    sql.NullString{String: "0", Valid: true},
 		IsActive:   sql.NullBool{Bool: true, Valid: true},
 	})
@@ -332,7 +362,7 @@ func (s *Controller) CreateWallet(c *fiber.Ctx) error {
 		zap.String("address", dbWallet.Address),
 	)
 
-	// Step 4: Save webhook registration record (only if webhook was registered)
+	// Step 5: Save webhook registration record (only if webhook was registered)
 	if registerWebhook && webhookID != "" {
 		webhookReg, err := s.sql.CreateWebhookRegistration(c.Context(), db.CreateWebhookRegistrationParams{
 			WalletID:         dbWallet.ID,
@@ -845,18 +875,22 @@ func (s *Controller) GetWallet(c *fiber.Ctx) error {
 		isActive = wallet.IsActive.Bool
 	}
 
+	// Get native token balance
+	nativeBalance := s.getNativeBalance(wallet.Blockchain, wallet.Address)
+
 	return c.JSON(WalletResponse{
-		ID:          wallet.ID.String(),
-		Address:     wallet.Address,
-		Network:     wallet.Blockchain,
-		NetworkInfo: networkInfo,
-		Token:       wallet.Token,
-		TokenInfo:   tokenInfo,
-		WalletType:  wallet.WalletType,
-		Balance:     balance,
-		IsActive:    isActive,
-		CreatedAt:   wallet.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:   wallet.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ID:            wallet.ID.String(),
+		Address:       wallet.Address,
+		Network:       wallet.Blockchain,
+		NetworkInfo:   networkInfo,
+		Token:         wallet.Token,
+		TokenInfo:     tokenInfo,
+		WalletType:    wallet.WalletType,
+		Balance:       balance,
+		NativeBalance: nativeBalance,
+		IsActive:      isActive,
+		CreatedAt:     wallet.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:     wallet.UpdatedAt.Format("2006-01-02 15:04:05"),
 	})
 }
 
@@ -912,18 +946,22 @@ func (s *Controller) ListWallets(c *fiber.Ctx) error {
 			isActive = wallet.IsActive.Bool
 		}
 
+		// Get native token balance
+		nativeBalance := s.getNativeBalance(wallet.Blockchain, wallet.Address)
+
 		walletResponses = append(walletResponses, WalletResponse{
-			ID:          wallet.ID.String(),
-			Address:     wallet.Address,
-			Network:     wallet.Blockchain,
-			NetworkInfo: networkInfo,
-			Token:       wallet.Token,
-			TokenInfo:   tokenInfo,
-			WalletType:  wallet.WalletType,
-			Balance:     balance,
-			IsActive:    isActive,
-			CreatedAt:   wallet.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:   wallet.UpdatedAt.Format("2006-01-02 15:04:05"),
+			ID:            wallet.ID.String(),
+			Address:       wallet.Address,
+			Network:       wallet.Blockchain,
+			NetworkInfo:   networkInfo,
+			Token:         wallet.Token,
+			TokenInfo:     tokenInfo,
+			WalletType:    wallet.WalletType,
+			Balance:       balance,
+			NativeBalance: nativeBalance,
+			IsActive:      isActive,
+			CreatedAt:     wallet.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     wallet.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
@@ -1028,18 +1066,22 @@ func (s *Controller) UpdateWallet(c *fiber.Ctx) error {
 		isActive = updatedWallet.IsActive.Bool
 	}
 
+	// Get native token balance
+	nativeBalance := s.getNativeBalance(updatedWallet.Blockchain, updatedWallet.Address)
+
 	return c.JSON(WalletResponse{
-		ID:          updatedWallet.ID.String(),
-		Address:     updatedWallet.Address,
-		Network:     updatedWallet.Blockchain,
-		NetworkInfo: networkInfo,
-		Token:       updatedWallet.Token,
-		TokenInfo:   tokenInfo,
-		WalletType:  updatedWallet.WalletType,
-		Balance:     balance,
-		IsActive:    isActive,
-		CreatedAt:   updatedWallet.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:   updatedWallet.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ID:            updatedWallet.ID.String(),
+		Address:       updatedWallet.Address,
+		Network:       updatedWallet.Blockchain,
+		NetworkInfo:   networkInfo,
+		Token:         updatedWallet.Token,
+		TokenInfo:     tokenInfo,
+		WalletType:    updatedWallet.WalletType,
+		Balance:       balance,
+		NativeBalance: nativeBalance,
+		IsActive:      isActive,
+		CreatedAt:     updatedWallet.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:     updatedWallet.UpdatedAt.Format("2006-01-02 15:04:05"),
 	})
 }
 

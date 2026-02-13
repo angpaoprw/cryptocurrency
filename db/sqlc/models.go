@@ -106,3 +106,22 @@ type WebhookRegistration struct {
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
+
+type WithdrawalRequest struct {
+	ID              uuid.UUID      `json:"id"`
+	CustomerID      string         `json:"customer_id"`
+	FromWalletID    uuid.UUID      `json:"from_wallet_id"`
+	ToAddress       string         `json:"to_address"`
+	Network         string         `json:"network"`
+	Token           string         `json:"token"`
+	RequestedAmount string         `json:"requested_amount"`
+	FeeAmount       sql.NullString `json:"fee_amount"`
+	ActualAmount    sql.NullString `json:"actual_amount"`
+	Status          string         `json:"status"`
+	TransactionID   uuid.NullUUID  `json:"transaction_id"`
+	Notes           sql.NullString `json:"notes"`
+	ErrorMessage    sql.NullString `json:"error_message"`
+	CreatedAt       time.Time      `json:"created_at"`
+	CompletedAt     sql.NullTime   `json:"completed_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}

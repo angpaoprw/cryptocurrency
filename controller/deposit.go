@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/angpaoprw/cryptocurrency/api"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
 	"github.com/angpaoprw/cryptocurrency/logger"
 	"github.com/gofiber/fiber/v2"
@@ -37,7 +38,8 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 		})
 	}
 
-	wallet, err := s.sql.GetWalletByNetworkAndToken(c.Context(), db.GetWalletByNetworkAndTokenParams{
+	// Get available wallet (not currently assigned to another pending deposit)
+	wallet, err := s.sql.GetAvailableWalletByNetworkAndToken(c.Context(), db.GetAvailableWalletByNetworkAndTokenParams{
 		Blockchain: input.Network,
 		Token:      input.Token,
 		WalletType: "hot",
@@ -49,7 +51,7 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 			zap.Error(err),
 		)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "No available wallet for this network and token",
+			"error": "No available wallet for this network and token. All wallets are currently assigned to active deposits.",
 		})
 	}
 
@@ -215,4 +217,196 @@ type DepositRequestStatusResponse struct {
 	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
 	CompletedAt    *time.Time `json:"completed_at,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
+}
+
+// CreateInternalDepositRequest handles internal deposit request creation
+// @Summary Create a deposit request (internal service)
+// @Description Create a deposit request for internal services - sends notification upon creation
+// @Tags Internal
+// @Accept json
+// @Produce json
+// @Param request body CreateDepositRequestInput true "Deposit request details"
+// @Success 200 {object} CreateDepositResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /internal/deposit [post]
+func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
+	var input CreateDepositRequestInput
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if input.CustomerID == "" || input.Network == "" || input.Token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "customer_id, network, and token are required",
+		})
+	}
+
+	// Get available wallet (not currently assigned to another pending deposit)
+	wallet, err := s.sql.GetAvailableWalletByNetworkAndToken(c.Context(), db.GetAvailableWalletByNetworkAndTokenParams{
+		Blockchain: input.Network,
+		Token:      input.Token,
+		WalletType: "hot",
+	})
+	if err != nil {
+		logger.Error("No available hot wallet found",
+			zap.String("network", input.Network),
+			zap.String("token", input.Token),
+			zap.Error(err),
+		)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "No available wallet for this network and token. All wallets are currently assigned to active deposits.",
+		})
+	}
+
+	expirationMinutes := input.ExpirationMinutes
+	if expirationMinutes == 0 {
+		expirationMinutes = 3
+	}
+
+	expiresAt := sql.NullTime{
+		Time:  time.Now().Add(time.Duration(expirationMinutes) * time.Minute),
+		Valid: true,
+	}
+
+	var expectedAmount sql.NullString
+	if input.ExpectedAmount > 0 {
+		amt := decimal.NewFromFloat(input.ExpectedAmount)
+		expectedAmount = sql.NullString{String: amt.String(), Valid: true}
+	}
+
+	depositRequest, err := s.sql.CreateDepositRequest(c.Context(), db.CreateDepositRequestParams{
+		CustomerID:      input.CustomerID,
+		WalletID:        wallet.ID,
+		AssignedAddress: wallet.Address,
+		Network:         input.Network,
+		Token:           input.Token,
+		ExpectedAmount:  expectedAmount,
+		ExpiresAt:       expiresAt,
+	})
+	if err != nil {
+		logger.Error("Failed to create deposit request", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create deposit request",
+		})
+	}
+
+	logger.Info("Internal deposit request created",
+		zap.String("request_id", depositRequest.ID.String()),
+		zap.String("customer_id", input.CustomerID),
+		zap.String("address", depositRequest.AssignedAddress),
+	)
+
+	// Send notification for deposit creation
+	if s.notificationClient != nil {
+		notificationData := map[string]interface{}{
+			"request_id":      depositRequest.ID.String(),
+			"deposit_address": depositRequest.AssignedAddress,
+			"network":         depositRequest.Network,
+			"token":           depositRequest.Token,
+			"status":          depositRequest.Status,
+			"expires_at":      depositRequest.ExpiresAt.Time.Format(time.RFC3339),
+		}
+		if input.ExpectedAmount > 0 {
+			notificationData["expected_amount"] = input.ExpectedAmount
+		}
+		s.notificationClient.SendNotification(input.CustomerID, api.EventDepositCreated, notificationData)
+	}
+
+	return c.JSON(CreateDepositResponse{
+		RequestID:        depositRequest.ID.String(),
+		CustomerID:       depositRequest.CustomerID,
+		DepositAddress:   depositRequest.AssignedAddress,
+		Network:          depositRequest.Network,
+		Token:            depositRequest.Token,
+		ExpectedAmount:   input.ExpectedAmount,
+		Status:           depositRequest.Status,
+		ExpiresAt:        depositRequest.ExpiresAt.Time,
+		ExpiresInSeconds: int(time.Until(depositRequest.ExpiresAt.Time).Seconds()),
+		CreatedAt:        depositRequest.CreatedAt,
+	})
+}
+
+// CancelDepositRequest cancels an active deposit request
+// @Summary Cancel a deposit request (internal)
+// @Description Cancel a pending or partial deposit request
+// @Tags Internal
+// @Produce json
+// @Param id path string true "Deposit Request ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /internal/deposit/{id} [delete]
+func (s *Controller) CancelDepositRequest(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	requestID, err := uuid.Parse(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid deposit request ID",
+		})
+	}
+
+	// Get current deposit request
+	depositRequest, err := s.sql.GetDepositRequest(c.Context(), requestID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Deposit request not found",
+			})
+		}
+		logger.Error("Failed to get deposit request",
+			zap.Error(err),
+			zap.String("request_id", idParam),
+		)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve deposit request",
+		})
+	}
+
+	// Only allow cancellation of pending or partial deposits
+	if depositRequest.Status != "pending" && depositRequest.Status != "partial" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":          "Cannot cancel deposit request",
+			"current_status": depositRequest.Status,
+			"message":        "Only pending or partial deposits can be cancelled",
+		})
+	}
+
+	// Cancel the deposit request
+	cancelledRequest, err := s.sql.CancelDepositRequest(c.Context(), requestID)
+	if err != nil {
+		logger.Error("Failed to cancel deposit request",
+			zap.Error(err),
+			zap.String("request_id", idParam),
+		)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to cancel deposit request",
+		})
+	}
+
+	logger.Info("Deposit request cancelled",
+		zap.String("request_id", requestID.String()),
+		zap.String("customer_id", depositRequest.CustomerID),
+	)
+
+	// Send notification for deposit cancellation
+	if s.notificationClient != nil {
+		s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCancelled, map[string]interface{}{
+			"request_id":      cancelledRequest.ID.String(),
+			"deposit_address": cancelledRequest.AssignedAddress,
+			"network":         cancelledRequest.Network,
+			"token":           cancelledRequest.Token,
+			"status":          "cancelled",
+			"cancelled_at":    time.Now().Format(time.RFC3339),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":    "Deposit request cancelled successfully",
+		"request_id": cancelledRequest.ID.String(),
+		"status":     cancelledRequest.Status,
+	})
 }

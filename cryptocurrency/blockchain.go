@@ -58,6 +58,34 @@ var (
 	}
 )
 
+// USDTToSmallestUnit converts USDT amount to smallest unit (6 decimals)
+// Example: 1.5 USDT -> 1500000
+func USDTToSmallestUnit(usdt float64) *big.Int {
+	// USDT has 6 decimals, so multiply by 1,000,000
+	multiplier := big.NewFloat(1e6)
+	amount := big.NewFloat(usdt)
+	result := new(big.Float).Mul(amount, multiplier)
+
+	// Convert to big.Int
+	resultInt := new(big.Int)
+	result.Int(resultInt)
+	return resultInt
+}
+
+// EtherToWei converts ETH/POL/BNB amount to Wei (18 decimals)
+// Example: 0.001 ETH -> 1000000000000000
+func EtherToWei(ether float64) *big.Int {
+	// ETH/POL/BNB has 18 decimals
+	multiplier := big.NewFloat(1e18)
+	amount := big.NewFloat(ether)
+	result := new(big.Float).Mul(amount, multiplier)
+
+	// Convert to big.Int
+	resultInt := new(big.Int)
+	result.Int(resultInt)
+	return resultInt
+}
+
 // Client represents a blockchain client for a specific network
 type Client struct {
 	network *Network
