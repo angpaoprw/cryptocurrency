@@ -19,7 +19,7 @@ WHERE id = $1 LIMIT 1;
 
 -- name: GetWalletByAddress :one
 SELECT * FROM wallets
-WHERE address = $1 LIMIT 1;
+WHERE LOWER(address) = LOWER($1) LIMIT 1;
 
 -- name: GetWalletsByType :many
 SELECT * FROM wallets

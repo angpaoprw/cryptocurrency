@@ -167,6 +167,14 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 				// Warm/Cold wallet deposits are always matched (expected)
 				isMatched = true
 			}
+		} else {
+			// Transaction doesn't involve our wallets - skip it
+			logger.Warn("Transaction doesn't involve our wallets - skipping",
+				zap.String("from", activity.FromAddress),
+				zap.String("to", activity.ToAddress),
+				zap.String("tx_hash", activity.Hash),
+			)
+			continue
 		}
 
 		// Create transaction

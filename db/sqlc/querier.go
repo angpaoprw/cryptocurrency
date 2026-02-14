@@ -44,7 +44,7 @@ type Querier interface {
 	GetTransactionByEventId(ctx context.Context, eventID string) (Transaction, error)
 	GetTransactionByHash(ctx context.Context, transactionHash string) (Transaction, error)
 	GetWallet(ctx context.Context, id uuid.UUID) (Wallet, error)
-	GetWalletByAddress(ctx context.Context, address string) (Wallet, error)
+	GetWalletByAddress(ctx context.Context, lower string) (Wallet, error)
 	GetWalletByNetworkAndToken(ctx context.Context, arg GetWalletByNetworkAndTokenParams) (Wallet, error)
 	GetWalletWithSufficientBalance(ctx context.Context, arg GetWalletWithSufficientBalanceParams) (Wallet, error)
 	GetWalletsByType(ctx context.Context, walletType string) ([]Wallet, error)

@@ -241,11 +241,11 @@ func (q *Queries) GetWallet(ctx context.Context, id uuid.UUID) (Wallet, error) {
 
 const getWalletByAddress = `-- name: GetWalletByAddress :one
 SELECT id, wallet_type, blockchain, token, address, public_key, private_key, balance, is_active, last_sync_at, created_at, updated_at FROM wallets
-WHERE address = $1 LIMIT 1
+WHERE LOWER(address) = LOWER($1) LIMIT 1
 `
 
-func (q *Queries) GetWalletByAddress(ctx context.Context, address string) (Wallet, error) {
-	row := q.db.QueryRowContext(ctx, getWalletByAddress, address)
+func (q *Queries) GetWalletByAddress(ctx context.Context, lower string) (Wallet, error) {
+	row := q.db.QueryRowContext(ctx, getWalletByAddress, lower)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,
