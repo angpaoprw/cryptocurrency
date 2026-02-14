@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/angpaoprw/cryptocurrency/api"
@@ -190,6 +191,8 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 			RawValue:        sql.NullString{String: activity.RawContract.RawValue, Valid: true},
 			BlockTimestamp:  activity.BlockTimestamp,
 		}
+
+		log.Printf("body before creating transaction %+v", params)
 
 		transaction, err := s.sql.CreateTransaction(c.Context(), params)
 		if err != nil {
