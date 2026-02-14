@@ -69,8 +69,9 @@ type WebhookData struct {
 }
 
 type AddAddressesRequest struct {
-	WebhookID      string   `json:"webhook_id"`
-	AddressesToAdd []string `json:"addresses_to_add"`
+	WebhookID         string   `json:"webhook_id"`
+	AddressesToAdd    []string `json:"addresses_to_add"`
+	AddressesToRemove []string `json:"addresses_to_remove"`
 }
 
 type AddAddressesResponse struct {
@@ -230,17 +231,22 @@ func (a *Alchemy) AddAddressesToWebhook(webhookID string, addresses []string) er
 		return fmt.Errorf("no addresses provided")
 	}
 
+	// According to Alchemy API docs: webhook_id, addresses_to_add, addresses_to_remove (all in body)
 	url := fmt.Sprintf("%s/update-webhook-addresses", a.NotifyBaseURL)
 
 	addReq := AddAddressesRequest{
-		WebhookID:      webhookID,
-		AddressesToAdd: addresses,
+		WebhookID:         webhookID,
+		AddressesToAdd:    addresses,
+		AddressesToRemove: []string{},
 	}
 
 	jsonData, err := json.Marshal(addReq)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
+
+	// Debug: log the request being sent
+	fmt.Printf("DEBUG: AddAddressesToWebhook - URL=%s, Body=%s\n", url, string(jsonData))
 
 	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
 	if err != nil {
