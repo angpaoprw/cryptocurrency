@@ -3,7 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -45,70 +47,86 @@ func NewNotificationClient(baseURL string, logger *zap.Logger) *NotificationClie
 	}
 }
 
-// SendNotification sends a notification to the notification service
-// This function is non-blocking and logs errors instead of returning them
-func (nc *NotificationClient) SendNotification(customerID, eventType string, data map[string]interface{}) {
-	go func() {
-		if nc.baseURL == "" {
-			nc.logger.Warn("Notification service URL not configured, skipping notification",
-				zap.String("event_type", eventType),
-				zap.String("customer_id", customerID),
-			)
-			return
-		}
-
-		payload := NotificationPayload{
-			CustomerID: customerID,
-			EventType:  eventType,
-			Data:       data,
-			Timestamp:  time.Now(),
-		}
-
-		jsonData, err := json.Marshal(payload)
-		if err != nil {
-			nc.logger.Error("Failed to marshal notification payload",
-				zap.Error(err),
-				zap.String("event_type", eventType),
-				zap.String("customer_id", customerID),
-			)
-			return
-		}
-
-		url := fmt.Sprintf("%s/api/v1/notify", nc.baseURL)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-		if err != nil {
-			nc.logger.Error("Failed to create notification request",
-				zap.Error(err),
-				zap.String("url", url),
-			)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := nc.httpClient.Do(req)
-		if err != nil {
-			nc.logger.Error("Failed to send notification",
-				zap.Error(err),
-				zap.String("url", url),
-				zap.String("event_type", eventType),
-			)
-			return
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode >= 400 {
-			nc.logger.Warn("Notification service returned error status",
-				zap.Int("status_code", resp.StatusCode),
-				zap.String("event_type", eventType),
-				zap.String("customer_id", customerID),
-			)
-			return
-		}
-
-		nc.logger.Info("Notification sent successfully",
+// SendNotification sends a notification to the internal callback service
+// This function is synchronous and blocks until the callback completes
+func (nc *NotificationClient) SendNotification(customerID, eventType string, data map[string]interface{}) error {
+	if nc.baseURL == "" {
+		nc.logger.Warn("Notification service URL not configured, skipping notification",
 			zap.String("event_type", eventType),
 			zap.String("customer_id", customerID),
 		)
-	}()
+		return nil
+	}
+
+	payload := NotificationPayload{
+		CustomerID: customerID,
+		EventType:  eventType,
+		Data:       data,
+		Timestamp:  time.Now(),
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		nc.logger.Error("Failed to marshal notification payload",
+			zap.Error(err),
+			zap.String("event_type", eventType),
+			zap.String("customer_id", customerID),
+		)
+		return err
+	}
+
+	// Map event types to internal callback routes
+	var endpoint string
+	switch eventType {
+	case EventDepositCreated, EventDepositCompleted, EventDepositCancelled:
+		endpoint = "/v1/cryptocurrency/internal/callback/deposit"
+	case EventDepositExpired:
+		endpoint = "/v1/cryptocurrency/internal/callback/expire"
+	case EventWithdrawalCreated, EventWithdrawalCompleted, EventWithdrawalFailed:
+		endpoint = "/v1/cryptocurrency/internal/callback/withdrawal"
+	default:
+		endpoint = "/v1/cryptocurrency/internal/callback/unknown-transaction"
+	}
+
+	url := fmt.Sprintf("%s%s", nc.baseURL, endpoint)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		nc.logger.Error("Failed to create notification request",
+			zap.Error(err),
+			zap.String("url", url),
+		)
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := nc.httpClient.Do(req)
+	if err != nil {
+		nc.logger.Error("Failed to send notification",
+			zap.Error(err),
+			zap.String("url", url),
+			zap.String("event_type", eventType),
+		)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		nc.logger.Warn("Notification service returned error status",
+			zap.Int("status_code", resp.StatusCode),
+			zap.String("event_type", eventType),
+			zap.String("customer_id", customerID),
+		)
+		resp_body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return errors.New(string(resp_body))
+	}
+
+	nc.logger.Info("Notification sent successfully",
+		zap.String("event_type", eventType),
+		zap.String("customer_id", customerID),
+	)
+	return nil
 }

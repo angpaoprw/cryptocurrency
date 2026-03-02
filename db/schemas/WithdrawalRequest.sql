@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests (
     transaction_id UUID REFERENCES transactions(id),
     notes TEXT,
     error_message TEXT,
+    tx_hash VARCHAR(66),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

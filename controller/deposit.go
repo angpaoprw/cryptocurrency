@@ -71,8 +71,14 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 		expectedAmount = sql.NullString{String: amt.String(), Valid: true}
 	}
 
+	var refID sql.NullString
+	if input.RefID != "" {
+		refID = sql.NullString{String: input.RefID, Valid: true}
+	}
+
 	depositRequest, err := s.sql.CreateDepositRequest(c.Context(), db.CreateDepositRequestParams{
 		CustomerID:      input.CustomerID,
+		RefID:           refID,
 		WalletID:        wallet.ID,
 		AssignedAddress: wallet.Address,
 		Network:         input.Network,
@@ -93,7 +99,7 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 		zap.String("address", depositRequest.AssignedAddress),
 	)
 
-	return c.JSON(CreateDepositResponse{
+	response := CreateDepositResponse{
 		RequestID:        depositRequest.ID.String(),
 		CustomerID:       depositRequest.CustomerID,
 		DepositAddress:   depositRequest.AssignedAddress,
@@ -104,7 +110,11 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 		ExpiresAt:        depositRequest.ExpiresAt.Time,
 		ExpiresInSeconds: int(time.Until(depositRequest.ExpiresAt.Time).Seconds()),
 		CreatedAt:        depositRequest.CreatedAt,
-	})
+	}
+	if depositRequest.RefID.Valid {
+		response.RefID = depositRequest.RefID.String
+	}
+	return c.JSON(response)
 }
 
 // GetDepositRequestStatus godoc
@@ -154,6 +164,9 @@ func (s *Controller) GetDepositRequestStatus(c *fiber.Ctx) error {
 		Status:         depositRequest.Status,
 		CreatedAt:      depositRequest.CreatedAt,
 	}
+	if depositRequest.RefID.Valid {
+		response.RefID = depositRequest.RefID.String
+	}
 
 	// Convert ReceivedAmount from string
 	if depositRequest.ReceivedAmount.Valid {
@@ -185,6 +198,7 @@ func (s *Controller) GetDepositRequestStatus(c *fiber.Ctx) error {
 
 type CreateDepositRequestInput struct {
 	CustomerID        string  `json:"customer_id"`
+	RefID             string  `json:"ref_id,omitempty"`
 	Network           string  `json:"network"`
 	Token             string  `json:"token"`
 	ExpectedAmount    float64 `json:"expected_amount,omitempty"`
@@ -194,6 +208,7 @@ type CreateDepositRequestInput struct {
 type CreateDepositResponse struct {
 	RequestID        string    `json:"request_id"`
 	CustomerID       string    `json:"customer_id"`
+	RefID            string    `json:"ref_id,omitempty"`
 	DepositAddress   string    `json:"deposit_address"`
 	Network          string    `json:"network"`
 	Token            string    `json:"token"`
@@ -207,6 +222,7 @@ type CreateDepositResponse struct {
 type DepositRequestStatusResponse struct {
 	RequestID      string     `json:"request_id"`
 	CustomerID     string     `json:"customer_id"`
+	RefID          string     `json:"ref_id,omitempty"`
 	DepositAddress string     `json:"deposit_address"`
 	Network        string     `json:"network"`
 	Token          string     `json:"token"`
@@ -237,6 +253,8 @@ func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
 			"error": "Invalid request body",
 		})
 	}
+
+	logger.Info("Received internal deposit request", zap.Any("input", input))
 
 	if input.CustomerID == "" || input.Network == "" || input.Token == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -277,8 +295,14 @@ func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
 		expectedAmount = sql.NullString{String: amt.String(), Valid: true}
 	}
 
+	var refID sql.NullString
+	if input.RefID != "" {
+		refID = sql.NullString{String: input.RefID, Valid: true}
+	}
+
 	depositRequest, err := s.sql.CreateDepositRequest(c.Context(), db.CreateDepositRequestParams{
 		CustomerID:      input.CustomerID,
+		RefID:           refID,
 		WalletID:        wallet.ID,
 		AssignedAddress: wallet.Address,
 		Network:         input.Network,
@@ -299,25 +323,10 @@ func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
 		zap.String("address", depositRequest.AssignedAddress),
 	)
 
-	// Send notification for deposit creation
-	if s.notificationClient != nil {
-		notificationData := map[string]interface{}{
-			"request_id":      depositRequest.ID.String(),
-			"deposit_address": depositRequest.AssignedAddress,
-			"network":         depositRequest.Network,
-			"token":           depositRequest.Token,
-			"status":          depositRequest.Status,
-			"expires_at":      depositRequest.ExpiresAt.Time.Format(time.RFC3339),
-		}
-		if input.ExpectedAmount > 0 {
-			notificationData["expected_amount"] = input.ExpectedAmount
-		}
-		s.notificationClient.SendNotification(input.CustomerID, api.EventDepositCreated, notificationData)
-	}
-
-	return c.JSON(CreateDepositResponse{
+	response := CreateDepositResponse{
 		RequestID:        depositRequest.ID.String(),
 		CustomerID:       depositRequest.CustomerID,
+		RefID:            depositRequest.RefID.String,
 		DepositAddress:   depositRequest.AssignedAddress,
 		Network:          depositRequest.Network,
 		Token:            depositRequest.Token,
@@ -326,7 +335,11 @@ func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
 		ExpiresAt:        depositRequest.ExpiresAt.Time,
 		ExpiresInSeconds: int(time.Until(depositRequest.ExpiresAt.Time).Seconds()),
 		CreatedAt:        depositRequest.CreatedAt,
-	})
+	}
+	if depositRequest.RefID.Valid {
+		response.RefID = depositRequest.RefID.String
+	}
+	return c.JSON(response)
 }
 
 // CancelDepositRequest cancels an active deposit request
@@ -394,14 +407,23 @@ func (s *Controller) CancelDepositRequest(c *fiber.Ctx) error {
 
 	// Send notification for deposit cancellation
 	if s.notificationClient != nil {
-		s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCancelled, map[string]interface{}{
+		notificationData := map[string]interface{}{
 			"request_id":      cancelledRequest.ID.String(),
 			"deposit_address": cancelledRequest.AssignedAddress,
 			"network":         cancelledRequest.Network,
 			"token":           cancelledRequest.Token,
 			"status":          "cancelled",
 			"cancelled_at":    time.Now().Format(time.RFC3339),
-		})
+		}
+		if depositRequest.RefID.Valid {
+			notificationData["ref_id"] = depositRequest.RefID.String
+		}
+		if err := s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCancelled, notificationData); err != nil {
+			logger.Warn("Failed to send deposit cancellation notification",
+				zap.String("customer_id", depositRequest.CustomerID),
+				zap.Error(err),
+			)
+		}
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

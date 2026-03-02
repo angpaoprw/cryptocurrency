@@ -1,6 +1,7 @@
 -- name: CreateDepositRequest :one
 INSERT INTO deposit_requests (
   customer_id,
+  ref_id,
   wallet_id,
   assigned_address,
   network,
@@ -8,7 +9,7 @@ INSERT INTO deposit_requests (
   expected_amount,
   expires_at
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7
+  $1, $2, $3, $4, $5, $6, $7, $8
 )
 RETURNING *;
 

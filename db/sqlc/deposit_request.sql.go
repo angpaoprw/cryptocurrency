@@ -16,7 +16,7 @@ const cancelDepositRequest = `-- name: CancelDepositRequest :one
 UPDATE deposit_requests
 SET status = 'cancelled', updated_at = NOW()
 WHERE id = $1
-RETURNING id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
+RETURNING id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
 `
 
 func (q *Queries) CancelDepositRequest(ctx context.Context, id uuid.UUID) (DepositRequest, error) {
@@ -25,6 +25,7 @@ func (q *Queries) CancelDepositRequest(ctx context.Context, id uuid.UUID) (Depos
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.RefID,
 		&i.WalletID,
 		&i.AssignedAddress,
 		&i.Network,
@@ -44,6 +45,7 @@ func (q *Queries) CancelDepositRequest(ctx context.Context, id uuid.UUID) (Depos
 const createDepositRequest = `-- name: CreateDepositRequest :one
 INSERT INTO deposit_requests (
   customer_id,
+  ref_id,
   wallet_id,
   assigned_address,
   network,
@@ -51,13 +53,14 @@ INSERT INTO deposit_requests (
   expected_amount,
   expires_at
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7
+  $1, $2, $3, $4, $5, $6, $7, $8
 )
-RETURNING id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
+RETURNING id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
 `
 
 type CreateDepositRequestParams struct {
 	CustomerID      string         `json:"customer_id"`
+	RefID           sql.NullString `json:"ref_id"`
 	WalletID        uuid.UUID      `json:"wallet_id"`
 	AssignedAddress string         `json:"assigned_address"`
 	Network         string         `json:"network"`
@@ -69,6 +72,7 @@ type CreateDepositRequestParams struct {
 func (q *Queries) CreateDepositRequest(ctx context.Context, arg CreateDepositRequestParams) (DepositRequest, error) {
 	row := q.db.QueryRowContext(ctx, createDepositRequest,
 		arg.CustomerID,
+		arg.RefID,
 		arg.WalletID,
 		arg.AssignedAddress,
 		arg.Network,
@@ -80,6 +84,7 @@ func (q *Queries) CreateDepositRequest(ctx context.Context, arg CreateDepositReq
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.RefID,
 		&i.WalletID,
 		&i.AssignedAddress,
 		&i.Network,
@@ -102,7 +107,7 @@ SET status = 'expired', updated_at = NOW()
 WHERE status IN ('pending', 'partial')
   AND expires_at IS NOT NULL
   AND expires_at < NOW()
-RETURNING id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
+RETURNING id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
 `
 
 func (q *Queries) ExpireDepositRequests(ctx context.Context) ([]DepositRequest, error) {
@@ -117,6 +122,7 @@ func (q *Queries) ExpireDepositRequests(ctx context.Context) ([]DepositRequest, 
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
+			&i.RefID,
 			&i.WalletID,
 			&i.AssignedAddress,
 			&i.Network,
@@ -144,7 +150,7 @@ func (q *Queries) ExpireDepositRequests(ctx context.Context) ([]DepositRequest, 
 }
 
 const getDepositRequest = `-- name: GetDepositRequest :one
-SELECT id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
+SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
 WHERE id = $1 LIMIT 1
 `
 
@@ -154,6 +160,7 @@ func (q *Queries) GetDepositRequest(ctx context.Context, id uuid.UUID) (DepositR
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.RefID,
 		&i.WalletID,
 		&i.AssignedAddress,
 		&i.Network,
@@ -171,7 +178,7 @@ func (q *Queries) GetDepositRequest(ctx context.Context, id uuid.UUID) (DepositR
 }
 
 const getDepositRequestByCustomer = `-- name: GetDepositRequestByCustomer :many
-SELECT id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
+SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
 WHERE customer_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -195,6 +202,7 @@ func (q *Queries) GetDepositRequestByCustomer(ctx context.Context, arg GetDeposi
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
+			&i.RefID,
 			&i.WalletID,
 			&i.AssignedAddress,
 			&i.Network,
@@ -222,7 +230,7 @@ func (q *Queries) GetDepositRequestByCustomer(ctx context.Context, arg GetDeposi
 }
 
 const getPendingDepositByAddress = `-- name: GetPendingDepositByAddress :one
-SELECT id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
+SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
 WHERE assigned_address = $1 
   AND status IN ('pending', 'partial')
   AND (expires_at IS NULL OR expires_at > NOW())
@@ -236,6 +244,7 @@ func (q *Queries) GetPendingDepositByAddress(ctx context.Context, assignedAddres
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.RefID,
 		&i.WalletID,
 		&i.AssignedAddress,
 		&i.Network,
@@ -253,7 +262,7 @@ func (q *Queries) GetPendingDepositByAddress(ctx context.Context, assignedAddres
 }
 
 const listPendingDeposits = `-- name: ListPendingDeposits :many
-SELECT id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
+SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
 WHERE status IN ('pending', 'partial')
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC
@@ -271,6 +280,7 @@ func (q *Queries) ListPendingDeposits(ctx context.Context) ([]DepositRequest, er
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
+			&i.RefID,
 			&i.WalletID,
 			&i.AssignedAddress,
 			&i.Network,
@@ -306,7 +316,7 @@ SET
   completed_at = CASE WHEN $2 = 'completed' THEN NOW() ELSE completed_at END,
   updated_at = NOW()
 WHERE id = $1
-RETURNING id, customer_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
+RETURNING id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at
 `
 
 type UpdateDepositRequestStatusParams struct {
@@ -327,6 +337,7 @@ func (q *Queries) UpdateDepositRequestStatus(ctx context.Context, arg UpdateDepo
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.RefID,
 		&i.WalletID,
 		&i.AssignedAddress,
 		&i.Network,

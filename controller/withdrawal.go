@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/angpaoprw/cryptocurrency/api"
 	"github.com/angpaoprw/cryptocurrency/cryptocurrency"
@@ -174,18 +173,26 @@ func (s *Controller) CreateWithdrawalRequest(c *fiber.Ctx) error {
 		})
 	}
 
-	// Process withdrawal asynchronously
-	go s.processWithdrawal(withdrawalRequest.ID, wallet)
+	// Process withdrawal synchronously
+	txHash, err := s.processWithdrawal(withdrawalRequest.ID, wallet)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to process withdrawal",
+			"details": err.Error(),
+		})
+	}
 
-	return c.Status(fiber.StatusOK).JSON(CreateWithdrawalResponse{
-		RequestID:  withdrawalRequest.ID.String(),
-		Status:     withdrawalRequest.Status,
-		CustomerID: withdrawalRequest.CustomerID,
-		ToAddress:  withdrawalRequest.ToAddress,
-		Network:    withdrawalRequest.Network,
-		Token:      withdrawalRequest.Token,
-		Amount:     decimal.RequireFromString(withdrawalRequest.RequestedAmount),
-		CreatedAt:  withdrawalRequest.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"request_id":  withdrawalRequest.ID.String(),
+		"status":      "processing",
+		"customer_id": withdrawalRequest.CustomerID,
+		"to_address":  withdrawalRequest.ToAddress,
+		"network":     withdrawalRequest.Network,
+		"token":       withdrawalRequest.Token,
+		"amount":      withdrawalRequest.RequestedAmount,
+		"tx_hash":     txHash,
+		"created_at":  withdrawalRequest.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"message":     "Withdrawal transaction submitted. Status will be updated via Alchemy webhook.",
 	})
 }
 
@@ -262,15 +269,10 @@ func (s *Controller) GetWithdrawalRequest(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-// processWithdrawal processes the withdrawal request asynchronously
-func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
+// processWithdrawal processes the withdrawal request synchronously
+// Returns the transaction hash and error if any
+func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) (string, error) {
 	ctx := context.Background()
-
-	// Parse wallet balance for later use
-	var balance decimal.Decimal
-	if wallet.Balance.Valid {
-		balance, _ = decimal.NewFromString(wallet.Balance.String)
-	}
 
 	// Update status to processing
 	_, err := s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
@@ -282,7 +284,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.Error(err),
 			zap.String("request_id", requestID.String()),
 		)
-		return
+		return "", fmt.Errorf("failed to update status: %w", err)
 	}
 
 	// Get the withdrawal request details
@@ -292,8 +294,8 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.Error(err),
 			zap.String("request_id", requestID.String()),
 		)
-		s.markWithdrawalFailed(requestID, "Failed to retrieve withdrawal details", withdrawalRequest.CustomerID)
-		return
+		s.markWithdrawalFailed(requestID, "Failed to retrieve withdrawal details", "")
+		return "", fmt.Errorf("failed to get withdrawal request: %w", err)
 	}
 
 	// Decrypt private key
@@ -304,7 +306,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("wallet_id", wallet.ID.String()),
 		)
 		s.markWithdrawalFailed(requestID, "Failed to access wallet credentials", withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("failed to decrypt private key: %w", err)
 	}
 
 	// Import wallet from private key
@@ -315,7 +317,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("wallet_id", wallet.ID.String()),
 		)
 		s.markWithdrawalFailed(requestID, "Failed to import wallet", withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("failed to import wallet: %w", err)
 	}
 
 	// Get network configuration
@@ -326,7 +328,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("network", withdrawalRequest.Network),
 		)
 		s.markWithdrawalFailed(requestID, fmt.Sprintf("Unsupported network: %s", withdrawalRequest.Network), withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("unsupported network: %s", withdrawalRequest.Network)
 	}
 
 	// Initialize blockchain client
@@ -337,7 +339,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("network", withdrawalRequest.Network),
 		)
 		s.markWithdrawalFailed(requestID, "Failed to connect to blockchain", withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("failed to connect to blockchain: %w", err)
 	}
 
 	// Convert amount to wei/smallest unit
@@ -348,7 +350,7 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("request_id", requestID.String()),
 		)
 		s.markWithdrawalFailed(requestID, "Invalid amount format", withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("invalid amount format: %w", err)
 	}
 
 	amountFloat, _ := requestedAmount.Float64()
@@ -380,89 +382,38 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) {
 			zap.String("request_id", requestID.String()),
 		)
 		s.markWithdrawalFailed(requestID, fmt.Sprintf("Transfer failed: %v", txErr), withdrawalRequest.CustomerID)
-		return
+		return "", fmt.Errorf("blockchain transfer failed: %w", txErr)
 	}
 
-	logger.Info("Blockchain transfer executed",
+	logger.Info("Blockchain transfer submitted",
 		zap.String("request_id", requestID.String()),
 		zap.String("tx_hash", txHash),
 	)
 
-	// Create transaction record
-	transaction, err := s.sql.CreateTransaction(ctx, db.CreateTransactionParams{
-		WalletID:        uuid.NullUUID{UUID: wallet.ID, Valid: true},
-		WebhookID:       "",
-		EventID:         fmt.Sprintf("withdrawal-%s", requestID.String()),
-		Network:         withdrawalRequest.Network,
-		TransactionHash: txHash,
-		BlockNumber:     "",
-		FromAddress:     wallet.Address,
-		ToAddress:       withdrawalRequest.ToAddress,
-		Value:           requestedAmount.String(),
-		Asset:           withdrawalRequest.Token,
-		Category:        "external",
-		TransactionType: sql.NullString{String: "withdrawal", Valid: true},
-		Status:          sql.NullString{String: "confirmed", Valid: true},
-		IsMatched:       sql.NullBool{Bool: true, Valid: true},
-		Confirmations:   sql.NullInt32{Int32: 1, Valid: true},
-		BlockTimestamp:  time.Now().Format(time.RFC3339),
-	})
-	if err != nil {
-		logger.Error("Failed to create transaction record",
-			zap.Error(err),
-			zap.String("tx_hash", txHash),
-		)
-	}
+	// Update withdrawal request with tx_hash (status remains "processing")
+	// Completion will be handled by Alchemy webhook callback when transaction is confirmed
+	// TODO: Uncomment after running migration 000011 and regenerating SQLC
+	// _, err = s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
+	// 	ID:     requestID,
+	// 	Status: "processing",
+	// 	TxHash: sql.NullString{String: txHash, Valid: true},
+	// })
+	// if err != nil {
+	// 	logger.Error("Failed to store tx_hash in withdrawal request",
+	// 		zap.Error(err),
+	// 		zap.String("request_id", requestID.String()),
+	// 	)
+	// 	// Continue anyway, we have the tx_hash
+	// }
 
-	// Update withdrawal request to completed
-	transactionID := uuid.NullUUID{
-		UUID:  transaction.ID,
-		Valid: true,
-	}
-
-	_, err = s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
-		ID:            requestID,
-		Status:        "completed",
-		TransactionID: transactionID,
-	})
-	if err != nil {
-		logger.Error("Failed to update withdrawal status to completed",
-			zap.Error(err),
-			zap.String("request_id", requestID.String()),
-		)
-	}
-
-	// Update wallet balance
-	newBalance := balance.Sub(requestedAmount)
-	_, err = s.sql.UpdateWalletBalance(ctx, db.UpdateWalletBalanceParams{
-		ID:      wallet.ID,
-		Balance: sql.NullString{String: newBalance.String(), Valid: true},
-	})
-	if err != nil {
-		logger.Error("Failed to update wallet balance",
-			zap.Error(err),
-			zap.String("wallet_id", wallet.ID.String()),
-		)
-	}
-
-	logger.Info("Withdrawal completed successfully",
+	logger.Info("Withdrawal transaction submitted, waiting for blockchain confirmation",
 		zap.String("request_id", requestID.String()),
 		zap.String("tx_hash", txHash),
 	)
 
-	// Send notification for withdrawal completion
-	if s.notificationClient != nil {
-		s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
-			"request_id":     requestID.String(),
-			"transaction_id": transaction.ID.String(),
-			"tx_hash":        txHash,
-			"to_address":     withdrawalRequest.ToAddress,
-			"amount":         requestedAmount.String(),
-			"network":        withdrawalRequest.Network,
-			"token":          withdrawalRequest.Token,
-			"status":         "completed",
-		})
-	}
+	// Return the transaction hash to the API caller
+	// The Alchemy webhook will complete the withdrawal and send notification
+	return txHash, nil
 }
 
 // markWithdrawalFailed marks a withdrawal request as failed

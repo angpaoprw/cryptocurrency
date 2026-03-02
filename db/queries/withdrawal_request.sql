@@ -30,6 +30,7 @@ SET
     status = $2,
     transaction_id = COALESCE($3, transaction_id),
     error_message = COALESCE($4, error_message),
+    tx_hash = COALESCE($5, tx_hash),
     completed_at = CASE 
         WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP 
         ELSE completed_at 
@@ -57,3 +58,7 @@ SELECT * FROM withdrawal_requests
 WHERE from_wallet_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
+
+-- name: GetWithdrawalRequestByTxHash :one
+SELECT * FROM withdrawal_requests
+WHERE tx_hash = $1 LIMIT 1;

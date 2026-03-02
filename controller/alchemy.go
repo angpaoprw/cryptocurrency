@@ -91,7 +91,75 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 				zap.String("from", activity.FromAddress),
 				zap.String("to", activity.ToAddress),
 				zap.String("type", transactionType),
+				zap.String("tx_hash", activity.Hash),
 			)
+
+			// Check if this is a withdrawal request waiting for confirmation
+			if transactionType == "withdrawal" {
+				withdrawalRequest, err := s.sql.GetWithdrawalRequestByTxHash(c.Context(), sql.NullString{
+					String: activity.Hash,
+					Valid:  true,
+				})
+				if err == nil && withdrawalRequest.Status == "processing" {
+					// Update withdrawal request to completed
+					transactionID := uuid.NullUUID{UUID: uuid.New(), Valid: true}
+					_, err = s.sql.UpdateWithdrawalRequestStatus(c.Context(), db.UpdateWithdrawalRequestStatusParams{
+						ID:            withdrawalRequest.ID,
+						Status:        "completed",
+						TransactionID: transactionID,
+					})
+					if err != nil {
+						logger.Error("Failed to update withdrawal request to completed",
+							zap.Error(err),
+							zap.String("request_id", withdrawalRequest.ID.String()),
+						)
+					} else {
+						// Update wallet balance (deduct withdrawn amount)
+						if errFrom == nil {
+							var balance decimal.Decimal
+							if fromWallet.Balance.Valid {
+								balance, _ = decimal.NewFromString(fromWallet.Balance.String)
+							}
+							withdrawnAmount, _ := decimal.NewFromString(withdrawalRequest.RequestedAmount)
+							newBalance := balance.Sub(withdrawnAmount)
+							_, err = s.sql.UpdateWalletBalance(c.Context(), db.UpdateWalletBalanceParams{
+								ID:      fromWallet.ID,
+								Balance: sql.NullString{String: newBalance.String(), Valid: true},
+							})
+							if err != nil {
+								logger.Error("Failed to update wallet balance after withdrawal",
+									zap.Error(err),
+									zap.String("wallet_id", fromWallet.ID.String()),
+								)
+							}
+						}
+
+						logger.Info("Withdrawal confirmed on blockchain",
+							zap.String("request_id", withdrawalRequest.ID.String()),
+							zap.String("tx_hash", activity.Hash),
+						)
+
+						// Send withdrawal completed notification synchronously to operator
+						if s.notificationClient != nil {
+							s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
+								"request_id":     withdrawalRequest.ID.String(),
+								"transaction_id": transactionID.UUID.String(),
+								"tx_hash":        activity.Hash,
+								"to_address":     withdrawalRequest.ToAddress,
+								"amount":         withdrawalRequest.RequestedAmount,
+								"network":        withdrawalRequest.Network,
+								"token":          withdrawalRequest.Token,
+								"status":         "completed",
+							})
+						}
+					}
+				} else if err != nil {
+					logger.Warn("Withdrawal transaction not found in database",
+						zap.String("tx_hash", activity.Hash),
+						zap.String("from_address", activity.FromAddress),
+					)
+				}
+			}
 		} else if errTo == nil {
 			// Transaction TO our wallet (deposit)
 			walletID = uuid.NullUUID{UUID: toWallet.ID, Valid: true}
@@ -141,7 +209,7 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 
 						// Send notification when deposit is completed
 						if status == "completed" && s.notificationClient != nil {
-							s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCompleted, map[string]interface{}{
+							notificationData := map[string]interface{}{
 								"request_id":      depositRequest.ID.String(),
 								"transaction_id":  txID.UUID.String(),
 								"tx_hash":         activity.Hash,
@@ -150,7 +218,11 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 								"network":         depositRequest.Network,
 								"token":           depositRequest.Token,
 								"status":          "completed",
-							})
+							}
+							if depositRequest.RefID.Valid {
+								notificationData["ref_id"] = depositRequest.RefID.String
+							}
+							s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCompleted, notificationData)
 						}
 					}
 				} else {

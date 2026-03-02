@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -15,6 +16,7 @@ type Querier interface {
 	CountWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) (int64, error)
 	CreateBlockchainNetwork(ctx context.Context, arg CreateBlockchainNetworkParams) (BlockchainNetwork, error)
 	CreateDepositRequest(ctx context.Context, arg CreateDepositRequestParams) (DepositRequest, error)
+	CreateFailedAPIRequest(ctx context.Context, arg CreateFailedAPIRequestParams) (FailedApiRequest, error)
 	CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
@@ -25,6 +27,7 @@ type Querier interface {
 	DeactivateWallet(ctx context.Context, id uuid.UUID) error
 	DeactivateWebhookRegistration(ctx context.Context, id uuid.UUID) error
 	DeactivateWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) error
+	DeleteFailedAPIRequest(ctx context.Context, id uuid.UUID) error
 	DeleteTransaction(ctx context.Context, id uuid.UUID) error
 	DeleteWallet(ctx context.Context, id uuid.UUID) error
 	ExpireDepositRequests(ctx context.Context) ([]DepositRequest, error)
@@ -38,6 +41,7 @@ type Querier interface {
 	GetDepositRequestByCustomer(ctx context.Context, arg GetDepositRequestByCustomerParams) ([]DepositRequest, error)
 	GetDepositsByWallet(ctx context.Context, arg GetDepositsByWalletParams) ([]Transaction, error)
 	GetPendingDepositByAddress(ctx context.Context, assignedAddress string) (DepositRequest, error)
+	GetPendingFailedAPIRequests(ctx context.Context) ([]FailedApiRequest, error)
 	GetToken(ctx context.Context, id uuid.UUID) (Token, error)
 	GetTokenByCodeAndNetwork(ctx context.Context, arg GetTokenByCodeAndNetworkParams) (Token, error)
 	GetTransaction(ctx context.Context, id uuid.UUID) (Transaction, error)
@@ -53,6 +57,7 @@ type Querier interface {
 	GetWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) (WebhookRegistration, error)
 	GetWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) ([]WebhookRegistration, error)
 	GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (WithdrawalRequest, error)
+	GetWithdrawalRequestByTxHash(ctx context.Context, txHash sql.NullString) (WithdrawalRequest, error)
 	GetWithdrawalRequestsByWallet(ctx context.Context, arg GetWithdrawalRequestsByWalletParams) ([]WithdrawalRequest, error)
 	GetWithdrawalsByWallet(ctx context.Context, arg GetWithdrawalsByWalletParams) ([]Transaction, error)
 	ListActiveBlockchainNetworks(ctx context.Context) ([]BlockchainNetwork, error)
@@ -71,6 +76,7 @@ type Querier interface {
 	ListWithdrawalRequestsByCustomer(ctx context.Context, arg ListWithdrawalRequestsByCustomerParams) ([]WithdrawalRequest, error)
 	UpdateBlockchainNetwork(ctx context.Context, arg UpdateBlockchainNetworkParams) (BlockchainNetwork, error)
 	UpdateDepositRequestStatus(ctx context.Context, arg UpdateDepositRequestStatusParams) (DepositRequest, error)
+	UpdateFailedAPIRequestAttempt(ctx context.Context, id uuid.UUID) (FailedApiRequest, error)
 	UpdateToken(ctx context.Context, arg UpdateTokenParams) (Token, error)
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) (Transaction, error)
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) (Wallet, error)

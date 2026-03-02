@@ -26,7 +26,7 @@ INSERT INTO withdrawal_requests (
     notes
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at
+) RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at
 `
 
 type CreateWithdrawalRequestParams struct {
@@ -70,6 +70,7 @@ func (q *Queries) CreateWithdrawalRequest(ctx context.Context, arg CreateWithdra
 		&i.TransactionID,
 		&i.Notes,
 		&i.ErrorMessage,
+		&i.TxHash,
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.UpdatedAt,
@@ -78,7 +79,7 @@ func (q *Queries) CreateWithdrawalRequest(ctx context.Context, arg CreateWithdra
 }
 
 const getWithdrawalRequest = `-- name: GetWithdrawalRequest :one
-SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at FROM withdrawal_requests
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
 WHERE id = $1 LIMIT 1
 `
 
@@ -99,6 +100,37 @@ func (q *Queries) GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (Withd
 		&i.TransactionID,
 		&i.Notes,
 		&i.ErrorMessage,
+		&i.TxHash,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getWithdrawalRequestByTxHash = `-- name: GetWithdrawalRequestByTxHash :one
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
+WHERE tx_hash = $1 LIMIT 1
+`
+
+func (q *Queries) GetWithdrawalRequestByTxHash(ctx context.Context, txHash sql.NullString) (WithdrawalRequest, error) {
+	row := q.db.QueryRowContext(ctx, getWithdrawalRequestByTxHash, txHash)
+	var i WithdrawalRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.FromWalletID,
+		&i.ToAddress,
+		&i.Network,
+		&i.Token,
+		&i.RequestedAmount,
+		&i.FeeAmount,
+		&i.ActualAmount,
+		&i.Status,
+		&i.TransactionID,
+		&i.Notes,
+		&i.ErrorMessage,
+		&i.TxHash,
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.UpdatedAt,
@@ -107,7 +139,7 @@ func (q *Queries) GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (Withd
 }
 
 const getWithdrawalRequestsByWallet = `-- name: GetWithdrawalRequestsByWallet :many
-SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at FROM withdrawal_requests
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
 WHERE from_wallet_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -142,6 +174,7 @@ func (q *Queries) GetWithdrawalRequestsByWallet(ctx context.Context, arg GetWith
 			&i.TransactionID,
 			&i.Notes,
 			&i.ErrorMessage,
+			&i.TxHash,
 			&i.CreatedAt,
 			&i.CompletedAt,
 			&i.UpdatedAt,
@@ -160,7 +193,7 @@ func (q *Queries) GetWithdrawalRequestsByWallet(ctx context.Context, arg GetWith
 }
 
 const listPendingWithdrawals = `-- name: ListPendingWithdrawals :many
-SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at FROM withdrawal_requests
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
 WHERE status = 'pending'
 ORDER BY created_at ASC
 `
@@ -188,6 +221,7 @@ func (q *Queries) ListPendingWithdrawals(ctx context.Context) ([]WithdrawalReque
 			&i.TransactionID,
 			&i.Notes,
 			&i.ErrorMessage,
+			&i.TxHash,
 			&i.CreatedAt,
 			&i.CompletedAt,
 			&i.UpdatedAt,
@@ -206,7 +240,7 @@ func (q *Queries) ListPendingWithdrawals(ctx context.Context) ([]WithdrawalReque
 }
 
 const listWithdrawalRequestsByCustomer = `-- name: ListWithdrawalRequestsByCustomer :many
-SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at FROM withdrawal_requests
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
 WHERE customer_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -241,6 +275,7 @@ func (q *Queries) ListWithdrawalRequestsByCustomer(ctx context.Context, arg List
 			&i.TransactionID,
 			&i.Notes,
 			&i.ErrorMessage,
+			&i.TxHash,
 			&i.CreatedAt,
 			&i.CompletedAt,
 			&i.UpdatedAt,
@@ -265,7 +300,7 @@ SET
     actual_amount = $3,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at
+RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at
 `
 
 type UpdateWithdrawalRequestFeesParams struct {
@@ -291,6 +326,7 @@ func (q *Queries) UpdateWithdrawalRequestFees(ctx context.Context, arg UpdateWit
 		&i.TransactionID,
 		&i.Notes,
 		&i.ErrorMessage,
+		&i.TxHash,
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.UpdatedAt,
@@ -304,13 +340,14 @@ SET
     status = $2,
     transaction_id = COALESCE($3, transaction_id),
     error_message = COALESCE($4, error_message),
+    tx_hash = COALESCE($5, tx_hash),
     completed_at = CASE 
         WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP 
         ELSE completed_at 
     END,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, created_at, completed_at, updated_at
+RETURNING id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at
 `
 
 type UpdateWithdrawalRequestStatusParams struct {
@@ -318,6 +355,7 @@ type UpdateWithdrawalRequestStatusParams struct {
 	Status        string         `json:"status"`
 	TransactionID uuid.NullUUID  `json:"transaction_id"`
 	ErrorMessage  sql.NullString `json:"error_message"`
+	TxHash        sql.NullString `json:"tx_hash"`
 }
 
 func (q *Queries) UpdateWithdrawalRequestStatus(ctx context.Context, arg UpdateWithdrawalRequestStatusParams) (WithdrawalRequest, error) {
@@ -326,6 +364,7 @@ func (q *Queries) UpdateWithdrawalRequestStatus(ctx context.Context, arg UpdateW
 		arg.Status,
 		arg.TransactionID,
 		arg.ErrorMessage,
+		arg.TxHash,
 	)
 	var i WithdrawalRequest
 	err := row.Scan(
@@ -342,6 +381,7 @@ func (q *Queries) UpdateWithdrawalRequestStatus(ctx context.Context, arg UpdateW
 		&i.TransactionID,
 		&i.Notes,
 		&i.ErrorMessage,
+		&i.TxHash,
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.UpdatedAt,

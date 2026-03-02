@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ type BlockchainNetwork struct {
 type DepositRequest struct {
 	ID              uuid.UUID      `json:"id"`
 	CustomerID      string         `json:"customer_id"`
+	RefID           sql.NullString `json:"ref_id"`
 	WalletID        uuid.UUID      `json:"wallet_id"`
 	AssignedAddress string         `json:"assigned_address"`
 	Network         string         `json:"network"`
@@ -38,6 +40,16 @@ type DepositRequest struct {
 	CompletedAt     sql.NullTime   `json:"completed_at"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type FailedApiRequest struct {
+	ID                  uuid.UUID       `json:"id"`
+	DepositRequestID    uuid.NullUUID   `json:"deposit_request_id"`
+	WithdrawalRequestID uuid.NullUUID   `json:"withdrawal_request_id"`
+	Body                json.RawMessage `json:"body"`
+	Error               string          `json:"error"`
+	LastAttempt         sql.NullTime    `json:"last_attempt"`
+	CreatedAt           time.Time       `json:"created_at"`
 }
 
 type Token struct {
@@ -121,6 +133,7 @@ type WithdrawalRequest struct {
 	TransactionID   uuid.NullUUID  `json:"transaction_id"`
 	Notes           sql.NullString `json:"notes"`
 	ErrorMessage    sql.NullString `json:"error_message"`
+	TxHash          sql.NullString `json:"tx_hash"`
 	CreatedAt       time.Time      `json:"created_at"`
 	CompletedAt     sql.NullTime   `json:"completed_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`

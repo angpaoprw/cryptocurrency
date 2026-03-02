@@ -99,6 +99,11 @@ func main() {
 	go balanceSyncService.Start(ctx)
 	logger.Info("Wallet balance sync service started (syncs every 30 seconds)")
 
+	// Start failed API retry service (checks every 5 seconds)
+	failedAPIRetryService := service.NewFailedAPIRetryService(queries, notificationClient)
+	go failedAPIRetryService.Start(ctx)
+	logger.Info("Failed API retry service started (retries every 5 seconds)")
+
 	new_controller := controller.NewController(queries, notificationClient, encryptionKey)
 	app := server.NewServer(new_controller)
 	app.Start()
