@@ -72,6 +72,8 @@ func (s *Controller) CreateWithdrawalRequest(c *fiber.Ctx) error {
 		})
 	}
 
+	logger.Info("Request Body", zap.Any("body", input))
+
 	// Validate required fields
 	if input.CustomerID == "" || input.ToAddress == "" || input.Network == "" || input.Token == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
