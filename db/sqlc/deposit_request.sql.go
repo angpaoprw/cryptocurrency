@@ -261,6 +261,38 @@ func (q *Queries) GetPendingDepositByAddress(ctx context.Context, assignedAddres
 	return i, err
 }
 
+const getPendingDepositByCustomer = `-- name: GetPendingDepositByCustomer :one
+SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
+WHERE customer_id = $1 
+  AND status IN ('pending', 'partial')
+  AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetPendingDepositByCustomer(ctx context.Context, customerID string) (DepositRequest, error) {
+	row := q.db.QueryRowContext(ctx, getPendingDepositByCustomer, customerID)
+	var i DepositRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.RefID,
+		&i.WalletID,
+		&i.AssignedAddress,
+		&i.Network,
+		&i.Token,
+		&i.ExpectedAmount,
+		&i.ReceivedAmount,
+		&i.Status,
+		&i.TransactionID,
+		&i.ExpiresAt,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listPendingDeposits = `-- name: ListPendingDeposits :many
 SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
 WHERE status IN ('pending', 'partial')

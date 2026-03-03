@@ -61,3 +61,11 @@ UPDATE deposit_requests
 SET status = 'cancelled', updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: GetPendingDepositByCustomer :one
+SELECT * FROM deposit_requests
+WHERE customer_id = $1 
+  AND status IN ('pending', 'partial')
+  AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY created_at DESC
+LIMIT 1;

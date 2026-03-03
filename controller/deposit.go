@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/angpaoprw/cryptocurrency/api"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
 	"github.com/angpaoprw/cryptocurrency/logger"
 	"github.com/gofiber/fiber/v2"
@@ -35,6 +34,25 @@ func (s *Controller) CreateDepositRequest(c *fiber.Ctx) error {
 	if input.CustomerID == "" || input.Network == "" || input.Token == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "customer_id, network, and token are required",
+		})
+	}
+
+	// Check if customer already has a pending deposit request
+	existingDeposit, err := s.sql.GetPendingDepositByCustomer(c.Context(), input.CustomerID)
+	if err == nil && existingDeposit.ID != uuid.Nil {
+		logger.Warn("Customer already has a pending deposit request",
+			zap.String("customer_id", input.CustomerID),
+			zap.String("existing_request_id", existingDeposit.ID.String()),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":               "Customer already has a pending deposit request. Please complete or wait for the current request to expire.",
+			"existing_request_id": existingDeposit.ID.String(),
+		})
+	}
+	if err != nil && err != sql.ErrNoRows {
+		logger.Error("Error checking for existing deposit request", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to validate deposit request",
 		})
 	}
 
@@ -262,6 +280,25 @@ func (s *Controller) CreateInternalDepositRequest(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check if customer already has a pending deposit request
+	existingDeposit, err := s.sql.GetPendingDepositByCustomer(c.Context(), input.CustomerID)
+	if err == nil && existingDeposit.ID != uuid.Nil {
+		logger.Warn("Customer already has a pending deposit request",
+			zap.String("customer_id", input.CustomerID),
+			zap.String("existing_request_id", existingDeposit.ID.String()),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":               "Customer already has a pending deposit request. Please complete or wait for the current request to expire.",
+			"existing_request_id": existingDeposit.ID.String(),
+		})
+	}
+	if err != nil && err != sql.ErrNoRows {
+		logger.Error("Error checking for existing deposit request", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to validate deposit request",
+		})
+	}
+
 	// Get available wallet (not currently assigned to another pending deposit)
 	wallet, err := s.sql.GetAvailableWalletByNetworkAndToken(c.Context(), db.GetAvailableWalletByNetworkAndTokenParams{
 		Blockchain: input.Network,
@@ -404,27 +441,6 @@ func (s *Controller) CancelDepositRequest(c *fiber.Ctx) error {
 		zap.String("request_id", requestID.String()),
 		zap.String("customer_id", depositRequest.CustomerID),
 	)
-
-	// Send notification for deposit cancellation
-	if s.notificationClient != nil {
-		notificationData := map[string]interface{}{
-			"request_id":      cancelledRequest.ID.String(),
-			"deposit_address": cancelledRequest.AssignedAddress,
-			"network":         cancelledRequest.Network,
-			"token":           cancelledRequest.Token,
-			"status":          "cancelled",
-			"cancelled_at":    time.Now().Format(time.RFC3339),
-		}
-		if depositRequest.RefID.Valid {
-			notificationData["ref_id"] = depositRequest.RefID.String
-		}
-		if err := s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCancelled, notificationData); err != nil {
-			logger.Warn("Failed to send deposit cancellation notification",
-				zap.String("customer_id", depositRequest.CustomerID),
-				zap.Error(err),
-			)
-		}
-	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message":    "Deposit request cancelled successfully",
