@@ -32,8 +32,8 @@ var (
 		Name:    "Polygon Mainnet",
 		ChainID: 137,
 		//its either https://polygon-rpc.com or https://1rpc.io/matic
-		RPCURL: "https://polygon-rpc.com",
-		// RPCURL:       "https://1rpc.io/matic",
+		// RPCURL: "https://polygon-rpc.com",
+		RPCURL:       "https://1rpc.io/matic",
 		USDTContract: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
 	}
 
