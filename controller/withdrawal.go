@@ -163,17 +163,17 @@ func (s *Controller) CreateWithdrawalRequest(c *fiber.Ctx) error {
 		zap.String("amount", input.Amount.String()),
 	)
 
-	// Send notification for withdrawal creation
-	if s.notificationClient != nil {
-		s.notificationClient.SendNotification(input.CustomerID, api.EventWithdrawalCreated, map[string]interface{}{
-			"request_id": withdrawalRequest.ID.String(),
-			"to_address": input.ToAddress,
-			"network":    input.Network,
-			"token":      input.Token,
-			"amount":     input.Amount.String(),
-			"status":     "pending",
-		})
-	}
+	// // Send notification for withdrawal creation
+	// if s.notificationClient != nil {
+	// 	s.notificationClient.SendNotification(input.CustomerID, api.EventWithdrawalCreated, map[string]interface{}{
+	// 		"request_id": withdrawalRequest.ID.String(),
+	// 		"to_address": input.ToAddress,
+	// 		"network":    input.Network,
+	// 		"token":      input.Token,
+	// 		"amount":     input.Amount.String(),
+	// 		"status":     "pending",
+	// 	})
+	// }
 
 	// Process withdrawal synchronously
 	txHash, err := s.processWithdrawal(withdrawalRequest.ID, wallet)
