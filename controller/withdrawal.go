@@ -344,6 +344,43 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) (s
 		return "", fmt.Errorf("failed to connect to blockchain: %w", err)
 	}
 
+	// Check MATIC balance and estimate gas cost
+	isERC20 := withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC"
+	maticBalance, estimatedGasCost, err := client.CheckGasAndBalance(wallet.Address, isERC20)
+	if err != nil {
+		logger.Error("Failed to check gas and balance",
+			zap.Error(err),
+			zap.String("wallet_address", wallet.Address),
+		)
+		s.markWithdrawalFailed(requestID, "Failed to check wallet balance", withdrawalRequest.CustomerID)
+		return "", fmt.Errorf("failed to check gas and balance: %w", err)
+	}
+
+	// Convert to MATIC for logging (18 decimals)
+	maticBalanceFloat := new(big.Float).Quo(new(big.Float).SetInt(maticBalance), big.NewFloat(1e18))
+	estimatedGasFloat := new(big.Float).Quo(new(big.Float).SetInt(estimatedGasCost), big.NewFloat(1e18))
+	maticBalanceStr, _ := maticBalanceFloat.Float64()
+	estimatedGasStr, _ := estimatedGasFloat.Float64()
+
+	logger.Info("Gas and balance check",
+		zap.String("wallet_address", wallet.Address),
+		zap.Float64("matic_balance", maticBalanceStr),
+		zap.Float64("estimated_gas_cost", estimatedGasStr),
+		zap.String("balance_wei", maticBalance.String()),
+		zap.String("gas_cost_wei", estimatedGasCost.String()),
+	)
+
+	// Check if wallet has enough MATIC for gas
+	if maticBalance.Cmp(estimatedGasCost) < 0 {
+		errorMsg := fmt.Sprintf("Insufficient MATIC for gas: have %.6f MATIC, need %.6f MATIC", maticBalanceStr, estimatedGasStr)
+		logger.Error(errorMsg,
+			zap.String("wallet_address", wallet.Address),
+			zap.String("request_id", requestID.String()),
+		)
+		s.markWithdrawalFailed(requestID, errorMsg, withdrawalRequest.CustomerID)
+		return "", fmt.Errorf("%s", errorMsg)
+	}
+
 	// Convert amount to wei/smallest unit
 	requestedAmount, err := decimal.NewFromString(withdrawalRequest.RequestedAmount)
 	if err != nil {

@@ -171,6 +171,43 @@ func (c *Client) GetUSDTBalanceFloat(address string) (float64, error) {
 	return result, nil
 }
 
+// CheckGasAndBalance checks if wallet has enough MATIC for gas and returns gas cost estimation
+func (c *Client) CheckGasAndBalance(walletAddress string, isERC20Transfer bool) (maticBalance *big.Int, estimatedGasCost *big.Int, err error) {
+	fromAddress := common.HexToAddress(walletAddress)
+
+	// Get MATIC balance
+	maticBalance, err = c.client.BalanceAt(context.Background(), fromAddress, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get MATIC balance: %w", err)
+	}
+
+	// Get current gas price
+	gasPrice, err := c.client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get gas price: %w", err)
+	}
+
+	// Add 20% buffer to gas price for faster confirmation
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
+
+	// Estimate gas limit based on transaction type
+	var gasLimit uint64
+	if isERC20Transfer {
+		gasLimit = uint64(100000) // ERC20 transfer
+	} else {
+		gasLimit = uint64(21000) // Native token transfer
+	}
+
+	// Add 20% buffer to gas limit
+	gasLimitWithBuffer := gasLimit * 120 / 100
+
+	// Calculate total gas cost
+	estimatedGasCost = new(big.Int).Mul(gasPriceWithBuffer, big.NewInt(int64(gasLimitWithBuffer)))
+
+	return maticBalance, estimatedGasCost, nil
+}
+
 // TransferUSDT transfers USDT tokens to a recipient
 func (c *Client) TransferUSDT(wallet *Wallet, toAddress string, amount *big.Int) (string, error) {
 	if c.network.USDTContract == "" {
@@ -184,11 +221,15 @@ func (c *Client) TransferUSDT(wallet *Wallet, toAddress string, amount *big.Int)
 		return "", fmt.Errorf("failed to get nonce: %w", err)
 	}
 
-	// Get gas price
+	// Get gas price and add 20% buffer for faster confirmation
 	gasPrice, err := c.client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to get gas price: %w", err)
 	}
+
+	// Add 20% buffer to gas price
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
 
 	// ERC20 transfer function: transfer(address,uint256)
 	// Function selector: 0xa9059cbb
@@ -203,8 +244,8 @@ func (c *Client) TransferUSDT(wallet *Wallet, toAddress string, amount *big.Int)
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
 	data = append(data, paddedAmount...)
 
-	// Estimate gas
-	gasLimit := uint64(100000) // Standard ERC20 transfer
+	// Gas limit with 20% buffer
+	gasLimit := uint64(100000 * 120 / 100) // Standard ERC20 transfer + 20% buffer
 
 	// Create transaction
 	contractAddress := common.HexToAddress(c.network.USDTContract)
@@ -213,7 +254,7 @@ func (c *Client) TransferUSDT(wallet *Wallet, toAddress string, amount *big.Int)
 		contractAddress,
 		big.NewInt(0), // value is 0 for token transfer
 		gasLimit,
-		gasPrice,
+		gasPriceWithBuffer,
 		data,
 	)
 
@@ -243,14 +284,18 @@ func (c *Client) TransferNative(wallet *Wallet, toAddress string, amount *big.In
 		return "", fmt.Errorf("failed to get nonce: %w", err)
 	}
 
-	// Get gas price
+	// Get gas price and add 20% buffer for faster confirmation
 	gasPrice, err := c.client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to get gas price: %w", err)
 	}
 
-	// Gas limit for simple transfer
-	gasLimit := uint64(21000)
+	// Add 20% buffer to gas price
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
+
+	// Gas limit for simple transfer with 20% buffer
+	gasLimit := uint64(21000 * 120 / 100)
 
 	// Create transaction
 	toAddr := common.HexToAddress(toAddress)
@@ -259,7 +304,7 @@ func (c *Client) TransferNative(wallet *Wallet, toAddress string, amount *big.In
 		toAddr,
 		amount,
 		gasLimit,
-		gasPrice,
+		gasPriceWithBuffer,
 		nil,
 	)
 
