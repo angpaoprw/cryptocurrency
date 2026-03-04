@@ -29,11 +29,9 @@ var (
 	}
 
 	PolygonMainnet = Network{
-		Name:    "Polygon Mainnet",
-		ChainID: 137,
-		//its either https://polygon-rpc.com or https://1rpc.io/matic
-		// RPCURL: "https://polygon-rpc.com",
-		RPCURL:       "https://1rpc.io/matic",
+		Name:         "Polygon Mainnet",
+		ChainID:      137,
+		RPCURL:       "https://polygon-mainnet.g.alchemy.com/v2/nvR7Q6Hh-32ImJymgE3Q5",
 		USDTContract: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
 	}
 
