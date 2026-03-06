@@ -187,8 +187,8 @@ func (c *Client) CheckGasAndBalance(walletAddress string, isERC20Transfer bool) 
 		return nil, nil, fmt.Errorf("failed to get gas price: %w", err)
 	}
 
-	// Add 20% buffer to gas price for faster confirmation
-	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	// Add 50% buffer to gas price for faster confirmation (prevents stuck transactions)
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(150))
 	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
 
 	// Estimate gas limit based on transaction type
@@ -221,14 +221,14 @@ func (c *Client) TransferUSDT(wallet *Wallet, toAddress string, amount *big.Int)
 		return "", fmt.Errorf("failed to get nonce: %w", err)
 	}
 
-	// Get gas price and add 20% buffer for faster confirmation
+	// Get gas price and add 50% buffer for faster confirmation
 	gasPrice, err := c.client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to get gas price: %w", err)
 	}
 
-	// Add 20% buffer to gas price
-	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	// Add 50% buffer to gas price (prevents stuck transactions)
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(150))
 	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
 
 	// ERC20 transfer function: transfer(address,uint256)
@@ -284,14 +284,14 @@ func (c *Client) TransferNative(wallet *Wallet, toAddress string, amount *big.In
 		return "", fmt.Errorf("failed to get nonce: %w", err)
 	}
 
-	// Get gas price and add 20% buffer for faster confirmation
+	// Get gas price and add 50% buffer for faster confirmation
 	gasPrice, err := c.client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to get gas price: %w", err)
 	}
 
-	// Add 20% buffer to gas price
-	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(120))
+	// Add 50% buffer to gas price (prevents stuck transactions)
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(150))
 	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
 
 	// Gas limit for simple transfer with 20% buffer
