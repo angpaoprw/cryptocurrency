@@ -231,15 +231,15 @@ func (q *Queries) GetDepositRequestByCustomer(ctx context.Context, arg GetDeposi
 
 const getPendingDepositByAddress = `-- name: GetPendingDepositByAddress :one
 SELECT id, customer_id, ref_id, wallet_id, assigned_address, network, token, expected_amount, received_amount, status, transaction_id, expires_at, completed_at, created_at, updated_at FROM deposit_requests
-WHERE assigned_address = $1 
+WHERE LOWER(assigned_address) = LOWER($1) 
   AND status IN ('pending', 'partial')
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC
 LIMIT 1
 `
 
-func (q *Queries) GetPendingDepositByAddress(ctx context.Context, assignedAddress string) (DepositRequest, error) {
-	row := q.db.QueryRowContext(ctx, getPendingDepositByAddress, assignedAddress)
+func (q *Queries) GetPendingDepositByAddress(ctx context.Context, lower string) (DepositRequest, error) {
+	row := q.db.QueryRowContext(ctx, getPendingDepositByAddress, lower)
 	var i DepositRequest
 	err := row.Scan(
 		&i.ID,

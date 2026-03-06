@@ -39,19 +39,19 @@ WHERE transaction_hash = $1 LIMIT 1;
 
 -- name: ListTransactionsByAddress :many
 SELECT * FROM transactions
-WHERE to_address = $1 OR from_address = $1
+WHERE LOWER(to_address) = LOWER($1) OR LOWER(from_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListTransactionsByToAddress :many
 SELECT * FROM transactions
-WHERE to_address = $1
+WHERE LOWER(to_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListTransactionsByFromAddress :many
 SELECT * FROM transactions
-WHERE from_address = $1
+WHERE LOWER(from_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 

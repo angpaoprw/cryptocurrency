@@ -87,6 +87,44 @@ func (s *Controller) CreateWithdrawalRequest(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check if customer already has an active withdrawal request
+	existingByCustomer, err := s.sql.GetActiveWithdrawalByCustomer(c.Context(), input.CustomerID)
+	if err == nil && existingByCustomer.ID != uuid.Nil {
+		logger.Warn("Customer already has an active withdrawal request",
+			zap.String("customer_id", input.CustomerID),
+			zap.String("existing_request_id", existingByCustomer.ID.String()),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":               "Customer already has an active withdrawal request. Please wait for the current request to complete.",
+			"existing_request_id": existingByCustomer.ID.String(),
+		})
+	}
+	if err != nil && err != sql.ErrNoRows {
+		logger.Error("Error checking for existing withdrawal by customer", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to validate withdrawal request",
+		})
+	}
+
+	// Check if there's already an active withdrawal to the same address
+	existingByAddress, err := s.sql.GetActiveWithdrawalByToAddress(c.Context(), input.ToAddress)
+	if err == nil && existingByAddress.ID != uuid.Nil {
+		logger.Warn("Active withdrawal already exists for this address",
+			zap.String("to_address", input.ToAddress),
+			zap.String("existing_request_id", existingByAddress.ID.String()),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":               "An active withdrawal to this address already exists. Please wait for it to complete.",
+			"existing_request_id": existingByAddress.ID.String(),
+		})
+	}
+	if err != nil && err != sql.ErrNoRows {
+		logger.Error("Error checking for existing withdrawal by address", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to validate withdrawal request",
+		})
+	}
+
 	// Find hot wallet with sufficient balance
 	wallet, err := s.sql.GetWalletWithSufficientBalance(c.Context(), db.GetWalletWithSufficientBalanceParams{
 		Blockchain: input.Network,

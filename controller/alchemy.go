@@ -97,10 +97,7 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 			// Check if this is a withdrawal request waiting for confirmation
 			if transactionType == "withdrawal" {
 				// Try matching by tx_hash first, then fallback to to_address
-				withdrawalRequest, err := s.sql.GetWithdrawalRequestByTxHash(c.Context(), sql.NullString{
-					String: activity.Hash,
-					Valid:  true,
-				})
+				withdrawalRequest, err := s.sql.GetWithdrawalRequestByTxHash(c.Context(), activity.Hash)
 				matchMethod := "tx_hash"
 
 				if err != nil {

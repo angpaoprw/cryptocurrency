@@ -78,14 +78,76 @@ func (q *Queries) CreateWithdrawalRequest(ctx context.Context, arg CreateWithdra
 	return i, err
 }
 
-const getProcessingWithdrawalByToAddress = `-- name: GetProcessingWithdrawalByToAddress :one
+const getActiveWithdrawalByCustomer = `-- name: GetActiveWithdrawalByCustomer :one
 SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
-WHERE to_address = $1 AND status = 'processing'
+WHERE customer_id = $1 AND status IN ('pending', 'processing')
 ORDER BY created_at DESC LIMIT 1
 `
 
-func (q *Queries) GetProcessingWithdrawalByToAddress(ctx context.Context, toAddress string) (WithdrawalRequest, error) {
-	row := q.db.QueryRowContext(ctx, getProcessingWithdrawalByToAddress, toAddress)
+func (q *Queries) GetActiveWithdrawalByCustomer(ctx context.Context, customerID string) (WithdrawalRequest, error) {
+	row := q.db.QueryRowContext(ctx, getActiveWithdrawalByCustomer, customerID)
+	var i WithdrawalRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.FromWalletID,
+		&i.ToAddress,
+		&i.Network,
+		&i.Token,
+		&i.RequestedAmount,
+		&i.FeeAmount,
+		&i.ActualAmount,
+		&i.Status,
+		&i.TransactionID,
+		&i.Notes,
+		&i.ErrorMessage,
+		&i.TxHash,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getActiveWithdrawalByToAddress = `-- name: GetActiveWithdrawalByToAddress :one
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
+WHERE LOWER(to_address) = LOWER($1) AND status IN ('pending', 'processing')
+ORDER BY created_at DESC LIMIT 1
+`
+
+func (q *Queries) GetActiveWithdrawalByToAddress(ctx context.Context, lower string) (WithdrawalRequest, error) {
+	row := q.db.QueryRowContext(ctx, getActiveWithdrawalByToAddress, lower)
+	var i WithdrawalRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.FromWalletID,
+		&i.ToAddress,
+		&i.Network,
+		&i.Token,
+		&i.RequestedAmount,
+		&i.FeeAmount,
+		&i.ActualAmount,
+		&i.Status,
+		&i.TransactionID,
+		&i.Notes,
+		&i.ErrorMessage,
+		&i.TxHash,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getProcessingWithdrawalByToAddress = `-- name: GetProcessingWithdrawalByToAddress :one
+SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
+WHERE LOWER(to_address) = LOWER($1) AND status = 'processing'
+ORDER BY created_at DESC LIMIT 1
+`
+
+func (q *Queries) GetProcessingWithdrawalByToAddress(ctx context.Context, lower string) (WithdrawalRequest, error) {
+	row := q.db.QueryRowContext(ctx, getProcessingWithdrawalByToAddress, lower)
 	var i WithdrawalRequest
 	err := row.Scan(
 		&i.ID,
@@ -141,11 +203,11 @@ func (q *Queries) GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (Withd
 
 const getWithdrawalRequestByTxHash = `-- name: GetWithdrawalRequestByTxHash :one
 SELECT id, customer_id, from_wallet_id, to_address, network, token, requested_amount, fee_amount, actual_amount, status, transaction_id, notes, error_message, tx_hash, created_at, completed_at, updated_at FROM withdrawal_requests
-WHERE tx_hash = $1 LIMIT 1
+WHERE LOWER(tx_hash) = LOWER($1) LIMIT 1
 `
 
-func (q *Queries) GetWithdrawalRequestByTxHash(ctx context.Context, txHash sql.NullString) (WithdrawalRequest, error) {
-	row := q.db.QueryRowContext(ctx, getWithdrawalRequestByTxHash, txHash)
+func (q *Queries) GetWithdrawalRequestByTxHash(ctx context.Context, lower string) (WithdrawalRequest, error) {
+	row := q.db.QueryRowContext(ctx, getWithdrawalRequestByTxHash, lower)
 	var i WithdrawalRequest
 	err := row.Scan(
 		&i.ID,

@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 )
@@ -35,17 +36,1134 @@ func (m *MockQuerier) EXPECT() *MockQuerierMockRecorder {
 	return m.recorder
 }
 
-// CreateWallet mocks base method.
-func (m *MockQuerier) CreateWallet(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+// CancelDepositRequest mocks base method.
+func (m *MockQuerier) CancelDepositRequest(ctx context.Context, id uuid.UUID) (db.DepositRequest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateWallet", ctx, id)
-	ret0, _ := ret[0].(uuid.UUID)
+	ret := m.ctrl.Call(m, "CancelDepositRequest", ctx, id)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CancelDepositRequest indicates an expected call of CancelDepositRequest.
+func (mr *MockQuerierMockRecorder) CancelDepositRequest(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelDepositRequest", reflect.TypeOf((*MockQuerier)(nil).CancelDepositRequest), ctx, id)
+}
+
+// CountWebhookRegistrationsByWebhookID mocks base method.
+func (m *MockQuerier) CountWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountWebhookRegistrationsByWebhookID", ctx, alchemyWebhookID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountWebhookRegistrationsByWebhookID indicates an expected call of CountWebhookRegistrationsByWebhookID.
+func (mr *MockQuerierMockRecorder) CountWebhookRegistrationsByWebhookID(ctx, alchemyWebhookID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountWebhookRegistrationsByWebhookID", reflect.TypeOf((*MockQuerier)(nil).CountWebhookRegistrationsByWebhookID), ctx, alchemyWebhookID)
+}
+
+// CreateBlockchainNetwork mocks base method.
+func (m *MockQuerier) CreateBlockchainNetwork(ctx context.Context, arg db.CreateBlockchainNetworkParams) (db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBlockchainNetwork", ctx, arg)
+	ret0, _ := ret[0].(db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBlockchainNetwork indicates an expected call of CreateBlockchainNetwork.
+func (mr *MockQuerierMockRecorder) CreateBlockchainNetwork(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBlockchainNetwork", reflect.TypeOf((*MockQuerier)(nil).CreateBlockchainNetwork), ctx, arg)
+}
+
+// CreateDepositRequest mocks base method.
+func (m *MockQuerier) CreateDepositRequest(ctx context.Context, arg db.CreateDepositRequestParams) (db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDepositRequest", ctx, arg)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDepositRequest indicates an expected call of CreateDepositRequest.
+func (mr *MockQuerierMockRecorder) CreateDepositRequest(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDepositRequest", reflect.TypeOf((*MockQuerier)(nil).CreateDepositRequest), ctx, arg)
+}
+
+// CreateFailedAPIRequest mocks base method.
+func (m *MockQuerier) CreateFailedAPIRequest(ctx context.Context, arg db.CreateFailedAPIRequestParams) (db.FailedApiRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFailedAPIRequest", ctx, arg)
+	ret0, _ := ret[0].(db.FailedApiRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateFailedAPIRequest indicates an expected call of CreateFailedAPIRequest.
+func (mr *MockQuerierMockRecorder) CreateFailedAPIRequest(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFailedAPIRequest", reflect.TypeOf((*MockQuerier)(nil).CreateFailedAPIRequest), ctx, arg)
+}
+
+// CreateToken mocks base method.
+func (m *MockQuerier) CreateToken(ctx context.Context, arg db.CreateTokenParams) (db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateToken", ctx, arg)
+	ret0, _ := ret[0].(db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateToken indicates an expected call of CreateToken.
+func (mr *MockQuerierMockRecorder) CreateToken(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockQuerier)(nil).CreateToken), ctx, arg)
+}
+
+// CreateTransaction mocks base method.
+func (m *MockQuerier) CreateTransaction(ctx context.Context, arg db.CreateTransactionParams) (db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTransaction", ctx, arg)
+	ret0, _ := ret[0].(db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateTransaction indicates an expected call of CreateTransaction.
+func (mr *MockQuerierMockRecorder) CreateTransaction(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransaction", reflect.TypeOf((*MockQuerier)(nil).CreateTransaction), ctx, arg)
+}
+
+// CreateWallet mocks base method.
+func (m *MockQuerier) CreateWallet(ctx context.Context, arg db.CreateWalletParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWallet", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateWallet indicates an expected call of CreateWallet.
-func (mr *MockQuerierMockRecorder) CreateWallet(ctx, id interface{}) *gomock.Call {
+func (mr *MockQuerierMockRecorder) CreateWallet(ctx, arg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWallet", reflect.TypeOf((*MockQuerier)(nil).CreateWallet), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWallet", reflect.TypeOf((*MockQuerier)(nil).CreateWallet), ctx, arg)
+}
+
+// CreateWebhookRegistration mocks base method.
+func (m *MockQuerier) CreateWebhookRegistration(ctx context.Context, arg db.CreateWebhookRegistrationParams) (db.WebhookRegistration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWebhookRegistration", ctx, arg)
+	ret0, _ := ret[0].(db.WebhookRegistration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateWebhookRegistration indicates an expected call of CreateWebhookRegistration.
+func (mr *MockQuerierMockRecorder) CreateWebhookRegistration(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWebhookRegistration", reflect.TypeOf((*MockQuerier)(nil).CreateWebhookRegistration), ctx, arg)
+}
+
+// CreateWithdrawalRequest mocks base method.
+func (m *MockQuerier) CreateWithdrawalRequest(ctx context.Context, arg db.CreateWithdrawalRequestParams) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWithdrawalRequest", ctx, arg)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateWithdrawalRequest indicates an expected call of CreateWithdrawalRequest.
+func (mr *MockQuerierMockRecorder) CreateWithdrawalRequest(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithdrawalRequest", reflect.TypeOf((*MockQuerier)(nil).CreateWithdrawalRequest), ctx, arg)
+}
+
+// DeactivateBlockchainNetwork mocks base method.
+func (m *MockQuerier) DeactivateBlockchainNetwork(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateBlockchainNetwork", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateBlockchainNetwork indicates an expected call of DeactivateBlockchainNetwork.
+func (mr *MockQuerierMockRecorder) DeactivateBlockchainNetwork(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateBlockchainNetwork", reflect.TypeOf((*MockQuerier)(nil).DeactivateBlockchainNetwork), ctx, id)
+}
+
+// DeactivateToken mocks base method.
+func (m *MockQuerier) DeactivateToken(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateToken", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateToken indicates an expected call of DeactivateToken.
+func (mr *MockQuerierMockRecorder) DeactivateToken(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateToken", reflect.TypeOf((*MockQuerier)(nil).DeactivateToken), ctx, id)
+}
+
+// DeactivateWallet mocks base method.
+func (m *MockQuerier) DeactivateWallet(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateWallet", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateWallet indicates an expected call of DeactivateWallet.
+func (mr *MockQuerierMockRecorder) DeactivateWallet(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateWallet", reflect.TypeOf((*MockQuerier)(nil).DeactivateWallet), ctx, id)
+}
+
+// DeactivateWebhookRegistration mocks base method.
+func (m *MockQuerier) DeactivateWebhookRegistration(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateWebhookRegistration", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateWebhookRegistration indicates an expected call of DeactivateWebhookRegistration.
+func (mr *MockQuerierMockRecorder) DeactivateWebhookRegistration(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateWebhookRegistration", reflect.TypeOf((*MockQuerier)(nil).DeactivateWebhookRegistration), ctx, id)
+}
+
+// DeactivateWebhookRegistrationByWalletID mocks base method.
+func (m *MockQuerier) DeactivateWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateWebhookRegistrationByWalletID", ctx, walletID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateWebhookRegistrationByWalletID indicates an expected call of DeactivateWebhookRegistrationByWalletID.
+func (mr *MockQuerierMockRecorder) DeactivateWebhookRegistrationByWalletID(ctx, walletID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateWebhookRegistrationByWalletID", reflect.TypeOf((*MockQuerier)(nil).DeactivateWebhookRegistrationByWalletID), ctx, walletID)
+}
+
+// DeleteFailedAPIRequest mocks base method.
+func (m *MockQuerier) DeleteFailedAPIRequest(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFailedAPIRequest", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFailedAPIRequest indicates an expected call of DeleteFailedAPIRequest.
+func (mr *MockQuerierMockRecorder) DeleteFailedAPIRequest(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFailedAPIRequest", reflect.TypeOf((*MockQuerier)(nil).DeleteFailedAPIRequest), ctx, id)
+}
+
+// DeleteTransaction mocks base method.
+func (m *MockQuerier) DeleteTransaction(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTransaction", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTransaction indicates an expected call of DeleteTransaction.
+func (mr *MockQuerierMockRecorder) DeleteTransaction(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockQuerier)(nil).DeleteTransaction), ctx, id)
+}
+
+// DeleteWallet mocks base method.
+func (m *MockQuerier) DeleteWallet(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteWallet", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteWallet indicates an expected call of DeleteWallet.
+func (mr *MockQuerierMockRecorder) DeleteWallet(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteWallet", reflect.TypeOf((*MockQuerier)(nil).DeleteWallet), ctx, id)
+}
+
+// ExpireDepositRequests mocks base method.
+func (m *MockQuerier) ExpireDepositRequests(ctx context.Context) ([]db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireDepositRequests", ctx)
+	ret0, _ := ret[0].([]db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExpireDepositRequests indicates an expected call of ExpireDepositRequests.
+func (mr *MockQuerierMockRecorder) ExpireDepositRequests(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireDepositRequests", reflect.TypeOf((*MockQuerier)(nil).ExpireDepositRequests), ctx)
+}
+
+// GetActiveWallets mocks base method.
+func (m *MockQuerier) GetActiveWallets(ctx context.Context) ([]db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveWallets", ctx)
+	ret0, _ := ret[0].([]db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveWallets indicates an expected call of GetActiveWallets.
+func (mr *MockQuerierMockRecorder) GetActiveWallets(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveWallets", reflect.TypeOf((*MockQuerier)(nil).GetActiveWallets), ctx)
+}
+
+// GetActiveWithdrawalByCustomer mocks base method.
+func (m *MockQuerier) GetActiveWithdrawalByCustomer(ctx context.Context, customerID string) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveWithdrawalByCustomer", ctx, customerID)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveWithdrawalByCustomer indicates an expected call of GetActiveWithdrawalByCustomer.
+func (mr *MockQuerierMockRecorder) GetActiveWithdrawalByCustomer(ctx, customerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveWithdrawalByCustomer", reflect.TypeOf((*MockQuerier)(nil).GetActiveWithdrawalByCustomer), ctx, customerID)
+}
+
+// GetActiveWithdrawalByToAddress mocks base method.
+func (m *MockQuerier) GetActiveWithdrawalByToAddress(ctx context.Context, lower string) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveWithdrawalByToAddress", ctx, lower)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveWithdrawalByToAddress indicates an expected call of GetActiveWithdrawalByToAddress.
+func (mr *MockQuerierMockRecorder) GetActiveWithdrawalByToAddress(ctx, lower interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveWithdrawalByToAddress", reflect.TypeOf((*MockQuerier)(nil).GetActiveWithdrawalByToAddress), ctx, lower)
+}
+
+// GetAllActiveWebhookRegistrations mocks base method.
+func (m *MockQuerier) GetAllActiveWebhookRegistrations(ctx context.Context) ([]db.WebhookRegistration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllActiveWebhookRegistrations", ctx)
+	ret0, _ := ret[0].([]db.WebhookRegistration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllActiveWebhookRegistrations indicates an expected call of GetAllActiveWebhookRegistrations.
+func (mr *MockQuerierMockRecorder) GetAllActiveWebhookRegistrations(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActiveWebhookRegistrations", reflect.TypeOf((*MockQuerier)(nil).GetAllActiveWebhookRegistrations), ctx)
+}
+
+// GetAllWallets mocks base method.
+func (m *MockQuerier) GetAllWallets(ctx context.Context) ([]db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllWallets", ctx)
+	ret0, _ := ret[0].([]db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllWallets indicates an expected call of GetAllWallets.
+func (mr *MockQuerierMockRecorder) GetAllWallets(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllWallets", reflect.TypeOf((*MockQuerier)(nil).GetAllWallets), ctx)
+}
+
+// GetAvailableWalletByNetworkAndToken mocks base method.
+func (m *MockQuerier) GetAvailableWalletByNetworkAndToken(ctx context.Context, arg db.GetAvailableWalletByNetworkAndTokenParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailableWalletByNetworkAndToken", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailableWalletByNetworkAndToken indicates an expected call of GetAvailableWalletByNetworkAndToken.
+func (mr *MockQuerierMockRecorder) GetAvailableWalletByNetworkAndToken(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableWalletByNetworkAndToken", reflect.TypeOf((*MockQuerier)(nil).GetAvailableWalletByNetworkAndToken), ctx, arg)
+}
+
+// GetBlockchainNetwork mocks base method.
+func (m *MockQuerier) GetBlockchainNetwork(ctx context.Context, id uuid.UUID) (db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBlockchainNetwork", ctx, id)
+	ret0, _ := ret[0].(db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBlockchainNetwork indicates an expected call of GetBlockchainNetwork.
+func (mr *MockQuerierMockRecorder) GetBlockchainNetwork(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockchainNetwork", reflect.TypeOf((*MockQuerier)(nil).GetBlockchainNetwork), ctx, id)
+}
+
+// GetBlockchainNetworkByCode mocks base method.
+func (m *MockQuerier) GetBlockchainNetworkByCode(ctx context.Context, code string) (db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBlockchainNetworkByCode", ctx, code)
+	ret0, _ := ret[0].(db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBlockchainNetworkByCode indicates an expected call of GetBlockchainNetworkByCode.
+func (mr *MockQuerierMockRecorder) GetBlockchainNetworkByCode(ctx, code interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockchainNetworkByCode", reflect.TypeOf((*MockQuerier)(nil).GetBlockchainNetworkByCode), ctx, code)
+}
+
+// GetDepositRequest mocks base method.
+func (m *MockQuerier) GetDepositRequest(ctx context.Context, id uuid.UUID) (db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDepositRequest", ctx, id)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDepositRequest indicates an expected call of GetDepositRequest.
+func (mr *MockQuerierMockRecorder) GetDepositRequest(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDepositRequest", reflect.TypeOf((*MockQuerier)(nil).GetDepositRequest), ctx, id)
+}
+
+// GetDepositRequestByCustomer mocks base method.
+func (m *MockQuerier) GetDepositRequestByCustomer(ctx context.Context, arg db.GetDepositRequestByCustomerParams) ([]db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDepositRequestByCustomer", ctx, arg)
+	ret0, _ := ret[0].([]db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDepositRequestByCustomer indicates an expected call of GetDepositRequestByCustomer.
+func (mr *MockQuerierMockRecorder) GetDepositRequestByCustomer(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDepositRequestByCustomer", reflect.TypeOf((*MockQuerier)(nil).GetDepositRequestByCustomer), ctx, arg)
+}
+
+// GetDepositsByWallet mocks base method.
+func (m *MockQuerier) GetDepositsByWallet(ctx context.Context, arg db.GetDepositsByWalletParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDepositsByWallet", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDepositsByWallet indicates an expected call of GetDepositsByWallet.
+func (mr *MockQuerierMockRecorder) GetDepositsByWallet(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDepositsByWallet", reflect.TypeOf((*MockQuerier)(nil).GetDepositsByWallet), ctx, arg)
+}
+
+// GetPendingDepositByAddress mocks base method.
+func (m *MockQuerier) GetPendingDepositByAddress(ctx context.Context, lower string) (db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPendingDepositByAddress", ctx, lower)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPendingDepositByAddress indicates an expected call of GetPendingDepositByAddress.
+func (mr *MockQuerierMockRecorder) GetPendingDepositByAddress(ctx, lower interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPendingDepositByAddress", reflect.TypeOf((*MockQuerier)(nil).GetPendingDepositByAddress), ctx, lower)
+}
+
+// GetPendingDepositByCustomer mocks base method.
+func (m *MockQuerier) GetPendingDepositByCustomer(ctx context.Context, customerID string) (db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPendingDepositByCustomer", ctx, customerID)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPendingDepositByCustomer indicates an expected call of GetPendingDepositByCustomer.
+func (mr *MockQuerierMockRecorder) GetPendingDepositByCustomer(ctx, customerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPendingDepositByCustomer", reflect.TypeOf((*MockQuerier)(nil).GetPendingDepositByCustomer), ctx, customerID)
+}
+
+// GetPendingFailedAPIRequests mocks base method.
+func (m *MockQuerier) GetPendingFailedAPIRequests(ctx context.Context) ([]db.FailedApiRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPendingFailedAPIRequests", ctx)
+	ret0, _ := ret[0].([]db.FailedApiRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPendingFailedAPIRequests indicates an expected call of GetPendingFailedAPIRequests.
+func (mr *MockQuerierMockRecorder) GetPendingFailedAPIRequests(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPendingFailedAPIRequests", reflect.TypeOf((*MockQuerier)(nil).GetPendingFailedAPIRequests), ctx)
+}
+
+// GetProcessingWithdrawalByToAddress mocks base method.
+func (m *MockQuerier) GetProcessingWithdrawalByToAddress(ctx context.Context, lower string) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProcessingWithdrawalByToAddress", ctx, lower)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProcessingWithdrawalByToAddress indicates an expected call of GetProcessingWithdrawalByToAddress.
+func (mr *MockQuerierMockRecorder) GetProcessingWithdrawalByToAddress(ctx, lower interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcessingWithdrawalByToAddress", reflect.TypeOf((*MockQuerier)(nil).GetProcessingWithdrawalByToAddress), ctx, lower)
+}
+
+// GetToken mocks base method.
+func (m *MockQuerier) GetToken(ctx context.Context, id uuid.UUID) (db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetToken", ctx, id)
+	ret0, _ := ret[0].(db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetToken indicates an expected call of GetToken.
+func (mr *MockQuerierMockRecorder) GetToken(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken", reflect.TypeOf((*MockQuerier)(nil).GetToken), ctx, id)
+}
+
+// GetTokenByCodeAndNetwork mocks base method.
+func (m *MockQuerier) GetTokenByCodeAndNetwork(ctx context.Context, arg db.GetTokenByCodeAndNetworkParams) (db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTokenByCodeAndNetwork", ctx, arg)
+	ret0, _ := ret[0].(db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTokenByCodeAndNetwork indicates an expected call of GetTokenByCodeAndNetwork.
+func (mr *MockQuerierMockRecorder) GetTokenByCodeAndNetwork(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenByCodeAndNetwork", reflect.TypeOf((*MockQuerier)(nil).GetTokenByCodeAndNetwork), ctx, arg)
+}
+
+// GetTransaction mocks base method.
+func (m *MockQuerier) GetTransaction(ctx context.Context, id uuid.UUID) (db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransaction", ctx, id)
+	ret0, _ := ret[0].(db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransaction indicates an expected call of GetTransaction.
+func (mr *MockQuerierMockRecorder) GetTransaction(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransaction", reflect.TypeOf((*MockQuerier)(nil).GetTransaction), ctx, id)
+}
+
+// GetTransactionByEventId mocks base method.
+func (m *MockQuerier) GetTransactionByEventId(ctx context.Context, eventID string) (db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransactionByEventId", ctx, eventID)
+	ret0, _ := ret[0].(db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransactionByEventId indicates an expected call of GetTransactionByEventId.
+func (mr *MockQuerierMockRecorder) GetTransactionByEventId(ctx, eventID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByEventId", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByEventId), ctx, eventID)
+}
+
+// GetTransactionByHash mocks base method.
+func (m *MockQuerier) GetTransactionByHash(ctx context.Context, transactionHash string) (db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransactionByHash", ctx, transactionHash)
+	ret0, _ := ret[0].(db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransactionByHash indicates an expected call of GetTransactionByHash.
+func (mr *MockQuerierMockRecorder) GetTransactionByHash(ctx, transactionHash interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByHash", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByHash), ctx, transactionHash)
+}
+
+// GetWallet mocks base method.
+func (m *MockQuerier) GetWallet(ctx context.Context, id uuid.UUID) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWallet", ctx, id)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWallet indicates an expected call of GetWallet.
+func (mr *MockQuerierMockRecorder) GetWallet(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWallet", reflect.TypeOf((*MockQuerier)(nil).GetWallet), ctx, id)
+}
+
+// GetWalletByAddress mocks base method.
+func (m *MockQuerier) GetWalletByAddress(ctx context.Context, lower string) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWalletByAddress", ctx, lower)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWalletByAddress indicates an expected call of GetWalletByAddress.
+func (mr *MockQuerierMockRecorder) GetWalletByAddress(ctx, lower interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWalletByAddress", reflect.TypeOf((*MockQuerier)(nil).GetWalletByAddress), ctx, lower)
+}
+
+// GetWalletByNetworkAndToken mocks base method.
+func (m *MockQuerier) GetWalletByNetworkAndToken(ctx context.Context, arg db.GetWalletByNetworkAndTokenParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWalletByNetworkAndToken", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWalletByNetworkAndToken indicates an expected call of GetWalletByNetworkAndToken.
+func (mr *MockQuerierMockRecorder) GetWalletByNetworkAndToken(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWalletByNetworkAndToken", reflect.TypeOf((*MockQuerier)(nil).GetWalletByNetworkAndToken), ctx, arg)
+}
+
+// GetWalletWithSufficientBalance mocks base method.
+func (m *MockQuerier) GetWalletWithSufficientBalance(ctx context.Context, arg db.GetWalletWithSufficientBalanceParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWalletWithSufficientBalance", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWalletWithSufficientBalance indicates an expected call of GetWalletWithSufficientBalance.
+func (mr *MockQuerierMockRecorder) GetWalletWithSufficientBalance(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWalletWithSufficientBalance", reflect.TypeOf((*MockQuerier)(nil).GetWalletWithSufficientBalance), ctx, arg)
+}
+
+// GetWalletsByType mocks base method.
+func (m *MockQuerier) GetWalletsByType(ctx context.Context, walletType string) ([]db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWalletsByType", ctx, walletType)
+	ret0, _ := ret[0].([]db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWalletsByType indicates an expected call of GetWalletsByType.
+func (mr *MockQuerierMockRecorder) GetWalletsByType(ctx, walletType interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWalletsByType", reflect.TypeOf((*MockQuerier)(nil).GetWalletsByType), ctx, walletType)
+}
+
+// GetWalletsWithoutWebhookRegistration mocks base method.
+func (m *MockQuerier) GetWalletsWithoutWebhookRegistration(ctx context.Context, walletType string) ([]db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWalletsWithoutWebhookRegistration", ctx, walletType)
+	ret0, _ := ret[0].([]db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWalletsWithoutWebhookRegistration indicates an expected call of GetWalletsWithoutWebhookRegistration.
+func (mr *MockQuerierMockRecorder) GetWalletsWithoutWebhookRegistration(ctx, walletType interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWalletsWithoutWebhookRegistration", reflect.TypeOf((*MockQuerier)(nil).GetWalletsWithoutWebhookRegistration), ctx, walletType)
+}
+
+// GetWebhookRegistrationByAddress mocks base method.
+func (m *MockQuerier) GetWebhookRegistrationByAddress(ctx context.Context, address string) (db.WebhookRegistration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWebhookRegistrationByAddress", ctx, address)
+	ret0, _ := ret[0].(db.WebhookRegistration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWebhookRegistrationByAddress indicates an expected call of GetWebhookRegistrationByAddress.
+func (mr *MockQuerierMockRecorder) GetWebhookRegistrationByAddress(ctx, address interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWebhookRegistrationByAddress", reflect.TypeOf((*MockQuerier)(nil).GetWebhookRegistrationByAddress), ctx, address)
+}
+
+// GetWebhookRegistrationByWalletID mocks base method.
+func (m *MockQuerier) GetWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) (db.WebhookRegistration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWebhookRegistrationByWalletID", ctx, walletID)
+	ret0, _ := ret[0].(db.WebhookRegistration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWebhookRegistrationByWalletID indicates an expected call of GetWebhookRegistrationByWalletID.
+func (mr *MockQuerierMockRecorder) GetWebhookRegistrationByWalletID(ctx, walletID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWebhookRegistrationByWalletID", reflect.TypeOf((*MockQuerier)(nil).GetWebhookRegistrationByWalletID), ctx, walletID)
+}
+
+// GetWebhookRegistrationsByWebhookID mocks base method.
+func (m *MockQuerier) GetWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) ([]db.WebhookRegistration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWebhookRegistrationsByWebhookID", ctx, alchemyWebhookID)
+	ret0, _ := ret[0].([]db.WebhookRegistration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWebhookRegistrationsByWebhookID indicates an expected call of GetWebhookRegistrationsByWebhookID.
+func (mr *MockQuerierMockRecorder) GetWebhookRegistrationsByWebhookID(ctx, alchemyWebhookID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWebhookRegistrationsByWebhookID", reflect.TypeOf((*MockQuerier)(nil).GetWebhookRegistrationsByWebhookID), ctx, alchemyWebhookID)
+}
+
+// GetWithdrawalRequest mocks base method.
+func (m *MockQuerier) GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWithdrawalRequest", ctx, id)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWithdrawalRequest indicates an expected call of GetWithdrawalRequest.
+func (mr *MockQuerierMockRecorder) GetWithdrawalRequest(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalRequest", reflect.TypeOf((*MockQuerier)(nil).GetWithdrawalRequest), ctx, id)
+}
+
+// GetWithdrawalRequestByTxHash mocks base method.
+func (m *MockQuerier) GetWithdrawalRequestByTxHash(ctx context.Context, lower string) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWithdrawalRequestByTxHash", ctx, lower)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWithdrawalRequestByTxHash indicates an expected call of GetWithdrawalRequestByTxHash.
+func (mr *MockQuerierMockRecorder) GetWithdrawalRequestByTxHash(ctx, lower interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalRequestByTxHash", reflect.TypeOf((*MockQuerier)(nil).GetWithdrawalRequestByTxHash), ctx, lower)
+}
+
+// GetWithdrawalRequestsByWallet mocks base method.
+func (m *MockQuerier) GetWithdrawalRequestsByWallet(ctx context.Context, arg db.GetWithdrawalRequestsByWalletParams) ([]db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWithdrawalRequestsByWallet", ctx, arg)
+	ret0, _ := ret[0].([]db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWithdrawalRequestsByWallet indicates an expected call of GetWithdrawalRequestsByWallet.
+func (mr *MockQuerierMockRecorder) GetWithdrawalRequestsByWallet(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalRequestsByWallet", reflect.TypeOf((*MockQuerier)(nil).GetWithdrawalRequestsByWallet), ctx, arg)
+}
+
+// GetWithdrawalsByWallet mocks base method.
+func (m *MockQuerier) GetWithdrawalsByWallet(ctx context.Context, arg db.GetWithdrawalsByWalletParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWithdrawalsByWallet", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWithdrawalsByWallet indicates an expected call of GetWithdrawalsByWallet.
+func (mr *MockQuerierMockRecorder) GetWithdrawalsByWallet(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByWallet", reflect.TypeOf((*MockQuerier)(nil).GetWithdrawalsByWallet), ctx, arg)
+}
+
+// ListActiveBlockchainNetworks mocks base method.
+func (m *MockQuerier) ListActiveBlockchainNetworks(ctx context.Context) ([]db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListActiveBlockchainNetworks", ctx)
+	ret0, _ := ret[0].([]db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListActiveBlockchainNetworks indicates an expected call of ListActiveBlockchainNetworks.
+func (mr *MockQuerierMockRecorder) ListActiveBlockchainNetworks(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActiveBlockchainNetworks", reflect.TypeOf((*MockQuerier)(nil).ListActiveBlockchainNetworks), ctx)
+}
+
+// ListAllActiveTokens mocks base method.
+func (m *MockQuerier) ListAllActiveTokens(ctx context.Context) ([]db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllActiveTokens", ctx)
+	ret0, _ := ret[0].([]db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllActiveTokens indicates an expected call of ListAllActiveTokens.
+func (mr *MockQuerierMockRecorder) ListAllActiveTokens(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllActiveTokens", reflect.TypeOf((*MockQuerier)(nil).ListAllActiveTokens), ctx)
+}
+
+// ListAllBlockchainNetworks mocks base method.
+func (m *MockQuerier) ListAllBlockchainNetworks(ctx context.Context) ([]db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllBlockchainNetworks", ctx)
+	ret0, _ := ret[0].([]db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllBlockchainNetworks indicates an expected call of ListAllBlockchainNetworks.
+func (mr *MockQuerierMockRecorder) ListAllBlockchainNetworks(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllBlockchainNetworks", reflect.TypeOf((*MockQuerier)(nil).ListAllBlockchainNetworks), ctx)
+}
+
+// ListAllTokens mocks base method.
+func (m *MockQuerier) ListAllTokens(ctx context.Context) ([]db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllTokens", ctx)
+	ret0, _ := ret[0].([]db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllTokens indicates an expected call of ListAllTokens.
+func (mr *MockQuerierMockRecorder) ListAllTokens(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllTokens", reflect.TypeOf((*MockQuerier)(nil).ListAllTokens), ctx)
+}
+
+// ListPendingDeposits mocks base method.
+func (m *MockQuerier) ListPendingDeposits(ctx context.Context) ([]db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPendingDeposits", ctx)
+	ret0, _ := ret[0].([]db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPendingDeposits indicates an expected call of ListPendingDeposits.
+func (mr *MockQuerierMockRecorder) ListPendingDeposits(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPendingDeposits", reflect.TypeOf((*MockQuerier)(nil).ListPendingDeposits), ctx)
+}
+
+// ListPendingWithdrawals mocks base method.
+func (m *MockQuerier) ListPendingWithdrawals(ctx context.Context) ([]db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPendingWithdrawals", ctx)
+	ret0, _ := ret[0].([]db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPendingWithdrawals indicates an expected call of ListPendingWithdrawals.
+func (mr *MockQuerierMockRecorder) ListPendingWithdrawals(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPendingWithdrawals", reflect.TypeOf((*MockQuerier)(nil).ListPendingWithdrawals), ctx)
+}
+
+// ListTokensByNetwork mocks base method.
+func (m *MockQuerier) ListTokensByNetwork(ctx context.Context, networkCode string) ([]db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTokensByNetwork", ctx, networkCode)
+	ret0, _ := ret[0].([]db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTokensByNetwork indicates an expected call of ListTokensByNetwork.
+func (mr *MockQuerierMockRecorder) ListTokensByNetwork(ctx, networkCode interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTokensByNetwork", reflect.TypeOf((*MockQuerier)(nil).ListTokensByNetwork), ctx, networkCode)
+}
+
+// ListTransactionsByAddress mocks base method.
+func (m *MockQuerier) ListTransactionsByAddress(ctx context.Context, arg db.ListTransactionsByAddressParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransactionsByAddress", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransactionsByAddress indicates an expected call of ListTransactionsByAddress.
+func (mr *MockQuerierMockRecorder) ListTransactionsByAddress(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactionsByAddress", reflect.TypeOf((*MockQuerier)(nil).ListTransactionsByAddress), ctx, arg)
+}
+
+// ListTransactionsByFromAddress mocks base method.
+func (m *MockQuerier) ListTransactionsByFromAddress(ctx context.Context, arg db.ListTransactionsByFromAddressParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransactionsByFromAddress", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransactionsByFromAddress indicates an expected call of ListTransactionsByFromAddress.
+func (mr *MockQuerierMockRecorder) ListTransactionsByFromAddress(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactionsByFromAddress", reflect.TypeOf((*MockQuerier)(nil).ListTransactionsByFromAddress), ctx, arg)
+}
+
+// ListTransactionsByToAddress mocks base method.
+func (m *MockQuerier) ListTransactionsByToAddress(ctx context.Context, arg db.ListTransactionsByToAddressParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransactionsByToAddress", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransactionsByToAddress indicates an expected call of ListTransactionsByToAddress.
+func (mr *MockQuerierMockRecorder) ListTransactionsByToAddress(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactionsByToAddress", reflect.TypeOf((*MockQuerier)(nil).ListTransactionsByToAddress), ctx, arg)
+}
+
+// ListTransactionsByWallet mocks base method.
+func (m *MockQuerier) ListTransactionsByWallet(ctx context.Context, arg db.ListTransactionsByWalletParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransactionsByWallet", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransactionsByWallet indicates an expected call of ListTransactionsByWallet.
+func (mr *MockQuerierMockRecorder) ListTransactionsByWallet(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactionsByWallet", reflect.TypeOf((*MockQuerier)(nil).ListTransactionsByWallet), ctx, arg)
+}
+
+// ListUnmatchedTransactions mocks base method.
+func (m *MockQuerier) ListUnmatchedTransactions(ctx context.Context, arg db.ListUnmatchedTransactionsParams) ([]db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUnmatchedTransactions", ctx, arg)
+	ret0, _ := ret[0].([]db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUnmatchedTransactions indicates an expected call of ListUnmatchedTransactions.
+func (mr *MockQuerierMockRecorder) ListUnmatchedTransactions(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUnmatchedTransactions", reflect.TypeOf((*MockQuerier)(nil).ListUnmatchedTransactions), ctx, arg)
+}
+
+// ListWallets mocks base method.
+func (m *MockQuerier) ListWallets(ctx context.Context, arg db.ListWalletsParams) ([]db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListWallets", ctx, arg)
+	ret0, _ := ret[0].([]db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListWallets indicates an expected call of ListWallets.
+func (mr *MockQuerierMockRecorder) ListWallets(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWallets", reflect.TypeOf((*MockQuerier)(nil).ListWallets), ctx, arg)
+}
+
+// ListWithdrawalRequestsByCustomer mocks base method.
+func (m *MockQuerier) ListWithdrawalRequestsByCustomer(ctx context.Context, arg db.ListWithdrawalRequestsByCustomerParams) ([]db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListWithdrawalRequestsByCustomer", ctx, arg)
+	ret0, _ := ret[0].([]db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListWithdrawalRequestsByCustomer indicates an expected call of ListWithdrawalRequestsByCustomer.
+func (mr *MockQuerierMockRecorder) ListWithdrawalRequestsByCustomer(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWithdrawalRequestsByCustomer", reflect.TypeOf((*MockQuerier)(nil).ListWithdrawalRequestsByCustomer), ctx, arg)
+}
+
+// UpdateBlockchainNetwork mocks base method.
+func (m *MockQuerier) UpdateBlockchainNetwork(ctx context.Context, arg db.UpdateBlockchainNetworkParams) (db.BlockchainNetwork, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBlockchainNetwork", ctx, arg)
+	ret0, _ := ret[0].(db.BlockchainNetwork)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateBlockchainNetwork indicates an expected call of UpdateBlockchainNetwork.
+func (mr *MockQuerierMockRecorder) UpdateBlockchainNetwork(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBlockchainNetwork", reflect.TypeOf((*MockQuerier)(nil).UpdateBlockchainNetwork), ctx, arg)
+}
+
+// UpdateDepositRequestStatus mocks base method.
+func (m *MockQuerier) UpdateDepositRequestStatus(ctx context.Context, arg db.UpdateDepositRequestStatusParams) (db.DepositRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDepositRequestStatus", ctx, arg)
+	ret0, _ := ret[0].(db.DepositRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDepositRequestStatus indicates an expected call of UpdateDepositRequestStatus.
+func (mr *MockQuerierMockRecorder) UpdateDepositRequestStatus(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDepositRequestStatus", reflect.TypeOf((*MockQuerier)(nil).UpdateDepositRequestStatus), ctx, arg)
+}
+
+// UpdateFailedAPIRequestAttempt mocks base method.
+func (m *MockQuerier) UpdateFailedAPIRequestAttempt(ctx context.Context, id uuid.UUID) (db.FailedApiRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFailedAPIRequestAttempt", ctx, id)
+	ret0, _ := ret[0].(db.FailedApiRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateFailedAPIRequestAttempt indicates an expected call of UpdateFailedAPIRequestAttempt.
+func (mr *MockQuerierMockRecorder) UpdateFailedAPIRequestAttempt(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFailedAPIRequestAttempt", reflect.TypeOf((*MockQuerier)(nil).UpdateFailedAPIRequestAttempt), ctx, id)
+}
+
+// UpdateToken mocks base method.
+func (m *MockQuerier) UpdateToken(ctx context.Context, arg db.UpdateTokenParams) (db.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateToken", ctx, arg)
+	ret0, _ := ret[0].(db.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateToken indicates an expected call of UpdateToken.
+func (mr *MockQuerierMockRecorder) UpdateToken(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateToken", reflect.TypeOf((*MockQuerier)(nil).UpdateToken), ctx, arg)
+}
+
+// UpdateTransactionStatus mocks base method.
+func (m *MockQuerier) UpdateTransactionStatus(ctx context.Context, arg db.UpdateTransactionStatusParams) (db.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTransactionStatus", ctx, arg)
+	ret0, _ := ret[0].(db.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateTransactionStatus indicates an expected call of UpdateTransactionStatus.
+func (mr *MockQuerierMockRecorder) UpdateTransactionStatus(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransactionStatus", reflect.TypeOf((*MockQuerier)(nil).UpdateTransactionStatus), ctx, arg)
+}
+
+// UpdateWallet mocks base method.
+func (m *MockQuerier) UpdateWallet(ctx context.Context, arg db.UpdateWalletParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWallet", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateWallet indicates an expected call of UpdateWallet.
+func (mr *MockQuerierMockRecorder) UpdateWallet(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWallet", reflect.TypeOf((*MockQuerier)(nil).UpdateWallet), ctx, arg)
+}
+
+// UpdateWalletBalance mocks base method.
+func (m *MockQuerier) UpdateWalletBalance(ctx context.Context, arg db.UpdateWalletBalanceParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWalletBalance", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateWalletBalance indicates an expected call of UpdateWalletBalance.
+func (mr *MockQuerierMockRecorder) UpdateWalletBalance(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWalletBalance", reflect.TypeOf((*MockQuerier)(nil).UpdateWalletBalance), ctx, arg)
+}
+
+// UpdateWalletPrivateKey mocks base method.
+func (m *MockQuerier) UpdateWalletPrivateKey(ctx context.Context, arg db.UpdateWalletPrivateKeyParams) (db.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWalletPrivateKey", ctx, arg)
+	ret0, _ := ret[0].(db.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateWalletPrivateKey indicates an expected call of UpdateWalletPrivateKey.
+func (mr *MockQuerierMockRecorder) UpdateWalletPrivateKey(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWalletPrivateKey", reflect.TypeOf((*MockQuerier)(nil).UpdateWalletPrivateKey), ctx, arg)
+}
+
+// UpdateWithdrawalRequestFees mocks base method.
+func (m *MockQuerier) UpdateWithdrawalRequestFees(ctx context.Context, arg db.UpdateWithdrawalRequestFeesParams) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWithdrawalRequestFees", ctx, arg)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateWithdrawalRequestFees indicates an expected call of UpdateWithdrawalRequestFees.
+func (mr *MockQuerierMockRecorder) UpdateWithdrawalRequestFees(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWithdrawalRequestFees", reflect.TypeOf((*MockQuerier)(nil).UpdateWithdrawalRequestFees), ctx, arg)
+}
+
+// UpdateWithdrawalRequestStatus mocks base method.
+func (m *MockQuerier) UpdateWithdrawalRequestStatus(ctx context.Context, arg db.UpdateWithdrawalRequestStatusParams) (db.WithdrawalRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWithdrawalRequestStatus", ctx, arg)
+	ret0, _ := ret[0].(db.WithdrawalRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateWithdrawalRequestStatus indicates an expected call of UpdateWithdrawalRequestStatus.
+func (mr *MockQuerierMockRecorder) UpdateWithdrawalRequestStatus(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWithdrawalRequestStatus", reflect.TypeOf((*MockQuerier)(nil).UpdateWithdrawalRequestStatus), ctx, arg)
 }

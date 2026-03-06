@@ -6,7 +6,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -32,6 +31,8 @@ type Querier interface {
 	DeleteWallet(ctx context.Context, id uuid.UUID) error
 	ExpireDepositRequests(ctx context.Context) ([]DepositRequest, error)
 	GetActiveWallets(ctx context.Context) ([]Wallet, error)
+	GetActiveWithdrawalByCustomer(ctx context.Context, customerID string) (WithdrawalRequest, error)
+	GetActiveWithdrawalByToAddress(ctx context.Context, lower string) (WithdrawalRequest, error)
 	GetAllActiveWebhookRegistrations(ctx context.Context) ([]WebhookRegistration, error)
 	GetAllWallets(ctx context.Context) ([]Wallet, error)
 	GetAvailableWalletByNetworkAndToken(ctx context.Context, arg GetAvailableWalletByNetworkAndTokenParams) (Wallet, error)
@@ -40,10 +41,10 @@ type Querier interface {
 	GetDepositRequest(ctx context.Context, id uuid.UUID) (DepositRequest, error)
 	GetDepositRequestByCustomer(ctx context.Context, arg GetDepositRequestByCustomerParams) ([]DepositRequest, error)
 	GetDepositsByWallet(ctx context.Context, arg GetDepositsByWalletParams) ([]Transaction, error)
-	GetPendingDepositByAddress(ctx context.Context, assignedAddress string) (DepositRequest, error)
+	GetPendingDepositByAddress(ctx context.Context, lower string) (DepositRequest, error)
 	GetPendingDepositByCustomer(ctx context.Context, customerID string) (DepositRequest, error)
 	GetPendingFailedAPIRequests(ctx context.Context) ([]FailedApiRequest, error)
-	GetProcessingWithdrawalByToAddress(ctx context.Context, toAddress string) (WithdrawalRequest, error)
+	GetProcessingWithdrawalByToAddress(ctx context.Context, lower string) (WithdrawalRequest, error)
 	GetToken(ctx context.Context, id uuid.UUID) (Token, error)
 	GetTokenByCodeAndNetwork(ctx context.Context, arg GetTokenByCodeAndNetworkParams) (Token, error)
 	GetTransaction(ctx context.Context, id uuid.UUID) (Transaction, error)
@@ -59,7 +60,7 @@ type Querier interface {
 	GetWebhookRegistrationByWalletID(ctx context.Context, walletID uuid.UUID) (WebhookRegistration, error)
 	GetWebhookRegistrationsByWebhookID(ctx context.Context, alchemyWebhookID string) ([]WebhookRegistration, error)
 	GetWithdrawalRequest(ctx context.Context, id uuid.UUID) (WithdrawalRequest, error)
-	GetWithdrawalRequestByTxHash(ctx context.Context, txHash sql.NullString) (WithdrawalRequest, error)
+	GetWithdrawalRequestByTxHash(ctx context.Context, lower string) (WithdrawalRequest, error)
 	GetWithdrawalRequestsByWallet(ctx context.Context, arg GetWithdrawalRequestsByWalletParams) ([]WithdrawalRequest, error)
 	GetWithdrawalsByWallet(ctx context.Context, arg GetWithdrawalsByWalletParams) ([]Transaction, error)
 	ListActiveBlockchainNetworks(ctx context.Context) ([]BlockchainNetwork, error)

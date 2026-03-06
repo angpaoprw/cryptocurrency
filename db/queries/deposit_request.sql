@@ -25,7 +25,7 @@ LIMIT $2 OFFSET $3;
 
 -- name: GetPendingDepositByAddress :one
 SELECT * FROM deposit_requests
-WHERE assigned_address = $1 
+WHERE LOWER(assigned_address) = LOWER($1) 
   AND status IN ('pending', 'partial')
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC

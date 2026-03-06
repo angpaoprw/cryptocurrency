@@ -355,19 +355,19 @@ func (q *Queries) GetWithdrawalsByWallet(ctx context.Context, arg GetWithdrawals
 
 const listTransactionsByAddress = `-- name: ListTransactionsByAddress :many
 SELECT id, wallet_id, webhook_id, event_id, network, transaction_hash, block_number, from_address, to_address, value, asset, category, transaction_type, status, is_matched, gas_fee, confirmations, contract_address, decimals, raw_value, block_timestamp, created_at, updated_at FROM transactions
-WHERE to_address = $1 OR from_address = $1
+WHERE LOWER(to_address) = LOWER($1) OR LOWER(from_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListTransactionsByAddressParams struct {
-	ToAddress string `json:"to_address"`
-	Limit     int32  `json:"limit"`
-	Offset    int32  `json:"offset"`
+	Lower  string `json:"lower"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
 }
 
 func (q *Queries) ListTransactionsByAddress(ctx context.Context, arg ListTransactionsByAddressParams) ([]Transaction, error) {
-	rows, err := q.db.QueryContext(ctx, listTransactionsByAddress, arg.ToAddress, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listTransactionsByAddress, arg.Lower, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -415,19 +415,19 @@ func (q *Queries) ListTransactionsByAddress(ctx context.Context, arg ListTransac
 
 const listTransactionsByFromAddress = `-- name: ListTransactionsByFromAddress :many
 SELECT id, wallet_id, webhook_id, event_id, network, transaction_hash, block_number, from_address, to_address, value, asset, category, transaction_type, status, is_matched, gas_fee, confirmations, contract_address, decimals, raw_value, block_timestamp, created_at, updated_at FROM transactions
-WHERE from_address = $1
+WHERE LOWER(from_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListTransactionsByFromAddressParams struct {
-	FromAddress string `json:"from_address"`
-	Limit       int32  `json:"limit"`
-	Offset      int32  `json:"offset"`
+	Lower  string `json:"lower"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
 }
 
 func (q *Queries) ListTransactionsByFromAddress(ctx context.Context, arg ListTransactionsByFromAddressParams) ([]Transaction, error) {
-	rows, err := q.db.QueryContext(ctx, listTransactionsByFromAddress, arg.FromAddress, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listTransactionsByFromAddress, arg.Lower, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -475,19 +475,19 @@ func (q *Queries) ListTransactionsByFromAddress(ctx context.Context, arg ListTra
 
 const listTransactionsByToAddress = `-- name: ListTransactionsByToAddress :many
 SELECT id, wallet_id, webhook_id, event_id, network, transaction_hash, block_number, from_address, to_address, value, asset, category, transaction_type, status, is_matched, gas_fee, confirmations, contract_address, decimals, raw_value, block_timestamp, created_at, updated_at FROM transactions
-WHERE to_address = $1
+WHERE LOWER(to_address) = LOWER($1)
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListTransactionsByToAddressParams struct {
-	ToAddress string `json:"to_address"`
-	Limit     int32  `json:"limit"`
-	Offset    int32  `json:"offset"`
+	Lower  string `json:"lower"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
 }
 
 func (q *Queries) ListTransactionsByToAddress(ctx context.Context, arg ListTransactionsByToAddressParams) ([]Transaction, error) {
-	rows, err := q.db.QueryContext(ctx, listTransactionsByToAddress, arg.ToAddress, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listTransactionsByToAddress, arg.Lower, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
