@@ -34,6 +34,7 @@ const (
 	EventWithdrawalCreated   = "withdrawal_created"
 	EventWithdrawalCompleted = "withdrawal_completed"
 	EventWithdrawalFailed    = "withdrawal_failed"
+	EventWithdrawalCancelled = "withdrawal_cancelled"
 )
 
 // NewNotificationClient creates a new notification service client

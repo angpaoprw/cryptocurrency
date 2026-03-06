@@ -407,15 +407,47 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) (s
 	var txHash string
 	var txErr error
 
-	// Execute transfer based on token type
-	if withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC" {
-		txHash, txErr = client.TransferUSDT(cryptoWallet, withdrawalRequest.ToAddress, amountWei)
-	} else {
-		// Native token (ETH, MATIC, BNB)
-		txHash, txErr = client.TransferNative(cryptoWallet, withdrawalRequest.ToAddress, amountWei)
+	// Get nonce before first attempt so we can reuse it for retry
+	nonce, nonceErr := client.GetNonce(wallet.Address)
+	if nonceErr != nil {
+		logger.Error("Failed to get nonce",
+			zap.Error(nonceErr),
+			zap.String("wallet_address", wallet.Address),
+		)
+		s.markWithdrawalFailed(requestID, "Failed to get nonce", withdrawalRequest.CustomerID)
+		return "", fmt.Errorf("failed to get nonce: %w", nonceErr)
 	}
 
-	if txErr != nil {
+	// Execute transfer based on token type (1.5x gas = 150)
+	if withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC" {
+		txHash, txErr = client.TransferUSDTWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 150, nonce)
+	} else {
+		txHash, txErr = client.TransferNativeWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 150, nonce)
+	}
+
+	// If gas-related error, retry with 2x gas (300 = 3x suggested gas price)
+	if txErr != nil && cryptocurrency.IsGasRelatedError(txErr) {
+		logger.Warn("Transfer failed due to gas pricing, retrying with 2x gas",
+			zap.Error(txErr),
+			zap.String("request_id", requestID.String()),
+		)
+
+		if withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC" {
+			txHash, txErr = client.TransferUSDTWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 300, nonce)
+		} else {
+			txHash, txErr = client.TransferNativeWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 300, nonce)
+		}
+
+		if txErr != nil {
+			logger.Error("Transfer failed even with 2x gas, cancelling withdrawal",
+				zap.Error(txErr),
+				zap.String("request_id", requestID.String()),
+			)
+			s.markWithdrawalCancelled(requestID, fmt.Sprintf("Transfer failed after 2x gas retry: %v", txErr), withdrawalRequest.CustomerID)
+			return "", fmt.Errorf("blockchain transfer failed after gas retry: %w", txErr)
+		}
+	} else if txErr != nil {
+		// Non-gas error, fail normally
 		logger.Error("Failed to execute blockchain transfer",
 			zap.Error(txErr),
 			zap.String("request_id", requestID.String()),
@@ -431,19 +463,18 @@ func (s *Controller) processWithdrawal(requestID uuid.UUID, wallet db.Wallet) (s
 
 	// Update withdrawal request with tx_hash (status remains "processing")
 	// Completion will be handled by Alchemy webhook callback when transaction is confirmed
-	// TODO: Uncomment after running migration 000011 and regenerating SQLC
-	// _, err = s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
-	// 	ID:     requestID,
-	// 	Status: "processing",
-	// 	TxHash: sql.NullString{String: txHash, Valid: true},
-	// })
-	// if err != nil {
-	// 	logger.Error("Failed to store tx_hash in withdrawal request",
-	// 		zap.Error(err),
-	// 		zap.String("request_id", requestID.String()),
-	// 	)
-	// 	// Continue anyway, we have the tx_hash
-	// }
+	_, err = s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
+		ID:     requestID,
+		Status: "processing",
+		TxHash: sql.NullString{String: txHash, Valid: true},
+	})
+	if err != nil {
+		logger.Error("Failed to store tx_hash in withdrawal request",
+			zap.Error(err),
+			zap.String("request_id", requestID.String()),
+		)
+		// Continue anyway, we have the tx_hash
+	}
 
 	logger.Info("Withdrawal transaction submitted, waiting for blockchain confirmation",
 		zap.String("request_id", requestID.String()),
@@ -484,6 +515,226 @@ func (s *Controller) markWithdrawalFailed(requestID uuid.UUID, errorMessage stri
 			"error_message": errorMessage,
 		})
 	}
+}
+
+// markWithdrawalCancelled marks a withdrawal request as cancelled and notifies the service to return credit
+func (s *Controller) markWithdrawalCancelled(requestID uuid.UUID, reason string, customerID string) {
+	ctx := context.Background()
+
+	errMsg := sql.NullString{
+		String: reason,
+		Valid:  true,
+	}
+
+	_, err := s.sql.UpdateWithdrawalRequestStatus(ctx, db.UpdateWithdrawalRequestStatusParams{
+		ID:           requestID,
+		Status:       "cancelled",
+		ErrorMessage: errMsg,
+	})
+	if err != nil {
+		logger.Error("Failed to update withdrawal status to cancelled",
+			zap.Error(err),
+			zap.String("request_id", requestID.String()),
+		)
+	}
+
+	// Send notification so service can return credit to customer
+	if s.notificationClient != nil {
+		s.notificationClient.SendNotification(customerID, api.EventWithdrawalCancelled, map[string]interface{}{
+			"request_id":    requestID.String(),
+			"status":        "cancelled",
+			"error_message": reason,
+		})
+	}
+}
+
+// CancelWithdrawalRequest cancels a stuck pending withdrawal transaction
+// @Summary Cancel a stuck withdrawal
+// @Description Cancel a withdrawal transaction stuck in pending state, return credit to customer
+// @Tags Admin
+// @Produce json
+// @Param id path string true "Withdrawal Request ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/withdrawal/{id}/cancel [post]
+func (s *Controller) CancelWithdrawalRequest(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	requestID, err := uuid.Parse(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid withdrawal request ID",
+		})
+	}
+
+	withdrawalRequest, err := s.sql.GetWithdrawalRequest(c.Context(), requestID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Withdrawal request not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve withdrawal request",
+		})
+	}
+
+	// Only allow cancellation of processing withdrawals
+	if withdrawalRequest.Status != "processing" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Cannot cancel withdrawal in '%s' status, only 'processing' withdrawals can be cancelled", withdrawalRequest.Status),
+		})
+	}
+
+	w, err := s.sql.GetWallet(c.Context(), withdrawalRequest.FromWalletID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve wallet",
+		})
+	}
+
+	network, err := s.getNetworkConfig(withdrawalRequest.Network)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Unsupported network: %s", withdrawalRequest.Network),
+		})
+	}
+
+	client, err := cryptocurrency.NewClient(network)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to connect to blockchain",
+		})
+	}
+
+	// Check if the original transaction is still pending
+	if withdrawalRequest.TxHash.Valid && withdrawalRequest.TxHash.String != "" {
+		_, isPending, txErr := client.GetTransactionByHash(withdrawalRequest.TxHash.String)
+		if txErr == nil && !isPending {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   "Transaction is no longer pending (already confirmed or dropped)",
+				"tx_hash": withdrawalRequest.TxHash.String,
+			})
+		}
+	}
+
+	privateKey, err := s.decryptPrivateKey(w.PrivateKey)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to access wallet credentials",
+		})
+	}
+
+	cryptoWallet, err := cryptocurrency.ImportWalletFromPrivateKey(privateKey)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to import wallet",
+		})
+	}
+
+	var cancelTxHash string
+
+	if withdrawalRequest.TxHash.Valid && withdrawalRequest.TxHash.String != "" {
+		// Get original tx nonce so we can replace it
+		originalTx, _, txErr := client.GetTransactionByHash(withdrawalRequest.TxHash.String)
+		if txErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to retrieve original transaction",
+			})
+		}
+
+		// First try: speed up with 2x gas (same nonce, same destination, same amount)
+		requestedAmount, _ := decimal.NewFromString(withdrawalRequest.RequestedAmount)
+		amountFloat, _ := requestedAmount.Float64()
+		var amountWei *big.Int
+		if withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC" {
+			amountWei = cryptocurrency.USDTToSmallestUnit(amountFloat)
+		} else {
+			amountWei = cryptocurrency.EtherToWei(amountFloat)
+		}
+
+		logger.Info("Attempting to speed up stuck transaction with 2x gas",
+			zap.String("request_id", requestID.String()),
+			zap.String("original_tx_hash", withdrawalRequest.TxHash.String),
+			zap.Uint64("nonce", originalTx.Nonce()),
+		)
+
+		var speedUpErr error
+		if withdrawalRequest.Token == "USDT" || withdrawalRequest.Token == "USDC" {
+			cancelTxHash, speedUpErr = client.TransferUSDTWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 300, originalTx.Nonce())
+		} else {
+			cancelTxHash, speedUpErr = client.TransferNativeWithGasMultiplier(cryptoWallet, withdrawalRequest.ToAddress, amountWei, 300, originalTx.Nonce())
+		}
+
+		if speedUpErr != nil {
+			// Speed up failed, cancel by sending 0-value self-transfer
+			logger.Warn("Speed up failed, cancelling transaction instead",
+				zap.Error(speedUpErr),
+				zap.String("request_id", requestID.String()),
+			)
+
+			cancelTxHash, err = client.CancelTransaction(cryptoWallet, originalTx.Nonce())
+			if err != nil {
+				logger.Error("Failed to cancel transaction",
+					zap.Error(err),
+					zap.String("request_id", requestID.String()),
+				)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error":   "Failed to cancel transaction",
+					"details": err.Error(),
+				})
+			}
+
+			// Cancelled — mark as cancelled and return credit
+			s.markWithdrawalCancelled(requestID, "Transaction cancelled: stuck due to low gas fee", withdrawalRequest.CustomerID)
+
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"request_id":     requestID.String(),
+				"status":         "cancelled",
+				"action":         "cancelled",
+				"cancel_tx_hash": cancelTxHash,
+				"message":        "Transaction cancelled. Credit return notification sent.",
+			})
+		}
+
+		// Speed up succeeded — update tx_hash but keep processing status
+		_, updateErr := s.sql.UpdateWithdrawalRequestStatus(c.Context(), db.UpdateWithdrawalRequestStatusParams{
+			ID:     requestID,
+			Status: "processing",
+			TxHash: sql.NullString{String: cancelTxHash, Valid: true},
+		})
+		if updateErr != nil {
+			logger.Error("Failed to update tx_hash after speed up",
+				zap.Error(updateErr),
+				zap.String("request_id", requestID.String()),
+			)
+		}
+
+		logger.Info("Transaction sped up with 2x gas",
+			zap.String("request_id", requestID.String()),
+			zap.String("new_tx_hash", cancelTxHash),
+		)
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"request_id":  requestID.String(),
+			"status":      "processing",
+			"action":      "sped_up",
+			"old_tx_hash": withdrawalRequest.TxHash.String,
+			"new_tx_hash": cancelTxHash,
+			"message":     "Transaction replayed with 2x gas. Waiting for confirmation.",
+		})
+	}
+
+	// No tx_hash — just cancel (mark as cancelled, return credit)
+	s.markWithdrawalCancelled(requestID, "Cancelled: no transaction hash found", withdrawalRequest.CustomerID)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"request_id": requestID.String(),
+		"status":     "cancelled",
+		"action":     "cancelled",
+		"message":    "Withdrawal cancelled. No blockchain transaction to cancel. Credit return notification sent.",
+	})
 }
 
 // getNetworkConfig returns the network configuration for a given network name

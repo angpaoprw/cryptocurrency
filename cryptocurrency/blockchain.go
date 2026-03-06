@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -342,4 +343,146 @@ func (c *Client) GetChainID() (*big.Int, error) {
 // GetBlockNumber returns the latest block number
 func (c *Client) GetBlockNumber() (uint64, error) {
 	return c.client.BlockNumber(context.Background())
+}
+
+// TransferUSDTWithGasMultiplier transfers USDT with a custom gas price multiplier (percentage, e.g. 300 = 3x)
+func (c *Client) TransferUSDTWithGasMultiplier(wallet *Wallet, toAddress string, amount *big.Int, gasMultiplier int64, nonce uint64) (string, error) {
+	if c.network.USDTContract == "" {
+		return "", fmt.Errorf("USDT contract not available on %s", c.network.Name)
+	}
+
+	fromAddress := common.HexToAddress(wallet.Address)
+	_ = fromAddress // used for context
+
+	gasPrice, err := c.client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to get gas price: %w", err)
+	}
+
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(gasMultiplier))
+	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
+
+	toAddr := common.HexToAddress(toAddress)
+	data := common.Hex2Bytes("a9059cbb")
+	paddedAddr := common.LeftPadBytes(toAddr.Bytes(), 32)
+	data = append(data, paddedAddr...)
+	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
+	data = append(data, paddedAmount...)
+
+	gasLimit := uint64(100000 * 120 / 100)
+
+	contractAddress := common.HexToAddress(c.network.USDTContract)
+	tx := types.NewTransaction(nonce, contractAddress, big.NewInt(0), gasLimit, gasPriceWithBuffer, data)
+
+	chainID := big.NewInt(c.network.ChainID)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), wallet.PrivateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	err = c.client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", fmt.Errorf("failed to send transaction: %w", err)
+	}
+
+	return signedTx.Hash().Hex(), nil
+}
+
+// TransferNativeWithGasMultiplier transfers native tokens with a custom gas price multiplier (percentage, e.g. 300 = 3x)
+func (c *Client) TransferNativeWithGasMultiplier(wallet *Wallet, toAddress string, amount *big.Int, gasMultiplier int64, nonce uint64) (string, error) {
+	gasPrice, err := c.client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to get gas price: %w", err)
+	}
+
+	gasPriceWithBuffer := new(big.Int).Mul(gasPrice, big.NewInt(gasMultiplier))
+	gasPriceWithBuffer = new(big.Int).Div(gasPriceWithBuffer, big.NewInt(100))
+
+	gasLimit := uint64(21000 * 120 / 100)
+
+	toAddr := common.HexToAddress(toAddress)
+	tx := types.NewTransaction(nonce, toAddr, amount, gasLimit, gasPriceWithBuffer, nil)
+
+	chainID := big.NewInt(c.network.ChainID)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), wallet.PrivateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	err = c.client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", fmt.Errorf("failed to send transaction: %w", err)
+	}
+
+	return signedTx.Hash().Hex(), nil
+}
+
+// CancelTransaction cancels a pending transaction by sending a 0-value replacement
+// to the sender's own address with the same nonce but 2x gas price
+func (c *Client) CancelTransaction(wallet *Wallet, pendingNonce uint64) (string, error) {
+	fromAddress := common.HexToAddress(wallet.Address)
+
+	gasPrice, err := c.client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to get gas price: %w", err)
+	}
+	// 2x gas price to outbid the stuck transaction
+	replacementGasPrice := new(big.Int).Mul(gasPrice, big.NewInt(200))
+	replacementGasPrice = new(big.Int).Div(replacementGasPrice, big.NewInt(100))
+
+	tx := types.NewTransaction(
+		pendingNonce,
+		fromAddress,   // send to self
+		big.NewInt(0), // zero value
+		uint64(21000), // simple transfer gas limit
+		replacementGasPrice,
+		nil,
+	)
+
+	chainID := big.NewInt(c.network.ChainID)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), wallet.PrivateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign cancellation transaction: %w", err)
+	}
+
+	err = c.client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", fmt.Errorf("failed to send cancellation transaction: %w", err)
+	}
+
+	return signedTx.Hash().Hex(), nil
+}
+
+// GetTransactionByHash retrieves a transaction and whether it is still pending
+func (c *Client) GetTransactionByHash(txHash string) (*types.Transaction, bool, error) {
+	hash := common.HexToHash(txHash)
+	tx, isPending, err := c.client.TransactionByHash(context.Background(), hash)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to get transaction: %w", err)
+	}
+	return tx, isPending, nil
+}
+
+// GetNonce returns the current pending nonce for an address
+func (c *Client) GetNonce(address string) (uint64, error) {
+	addr := common.HexToAddress(address)
+	nonce, err := c.client.PendingNonceAt(context.Background(), addr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get nonce: %w", err)
+	}
+	return nonce, nil
+}
+
+// IsGasRelatedError checks if an error is related to gas pricing
+func IsGasRelatedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "underpriced") ||
+		strings.Contains(msg, "gas too low") ||
+		strings.Contains(msg, "intrinsic gas") ||
+		strings.Contains(msg, "max fee per gas") ||
+		strings.Contains(msg, "fee too low") ||
+		strings.Contains(msg, "transaction gas price")
 }

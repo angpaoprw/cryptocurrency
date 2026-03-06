@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests (
     requested_amount DECIMAL(36, 18) NOT NULL,
     fee_amount DECIMAL(36, 18) DEFAULT 0,
     actual_amount DECIMAL(36, 18) DEFAULT 0,
-    status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
     transaction_id UUID REFERENCES transactions(id),
     notes TEXT,
     error_message TEXT,

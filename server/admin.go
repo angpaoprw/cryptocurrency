@@ -20,4 +20,7 @@ func (s *App) adminRoute() {
 	// Webhook management endpoints
 	admin.Get("/webhooks/status", s.Controller.WebhookStatus)
 	admin.Post("/webhooks/bootstrap", s.Controller.BootstrapWebhooks)
+
+	// Withdrawal management endpoints
+	admin.Post("/withdrawal/:id/cancel", s.Controller.CancelWithdrawalRequest)
 }

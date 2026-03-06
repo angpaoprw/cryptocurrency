@@ -32,7 +32,7 @@ SET
     error_message = COALESCE($4, error_message),
     tx_hash = COALESCE($5, tx_hash),
     completed_at = CASE 
-        WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP 
+        WHEN $2 IN ('completed', 'failed', 'cancelled') THEN CURRENT_TIMESTAMP 
         ELSE completed_at 
     END,
     updated_at = CURRENT_TIMESTAMP
