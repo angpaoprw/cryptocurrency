@@ -43,6 +43,7 @@ type Querier interface {
 	GetPendingDepositByAddress(ctx context.Context, assignedAddress string) (DepositRequest, error)
 	GetPendingDepositByCustomer(ctx context.Context, customerID string) (DepositRequest, error)
 	GetPendingFailedAPIRequests(ctx context.Context) ([]FailedApiRequest, error)
+	GetProcessingWithdrawalByToAddress(ctx context.Context, toAddress string) (WithdrawalRequest, error)
 	GetToken(ctx context.Context, id uuid.UUID) (Token, error)
 	GetTokenByCodeAndNetwork(ctx context.Context, arg GetTokenByCodeAndNetworkParams) (Token, error)
 	GetTransaction(ctx context.Context, id uuid.UUID) (Transaction, error)

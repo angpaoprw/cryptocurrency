@@ -96,17 +96,27 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 
 			// Check if this is a withdrawal request waiting for confirmation
 			if transactionType == "withdrawal" {
+				// Try matching by tx_hash first, then fallback to to_address
 				withdrawalRequest, err := s.sql.GetWithdrawalRequestByTxHash(c.Context(), sql.NullString{
 					String: activity.Hash,
 					Valid:  true,
 				})
+				matchMethod := "tx_hash"
+
+				if err != nil {
+					// tx_hash not found — fallback: match by to_address + status='processing'
+					withdrawalRequest, err = s.sql.GetProcessingWithdrawalByToAddress(c.Context(), activity.ToAddress)
+					matchMethod = "to_address"
+				}
+
 				if err == nil && withdrawalRequest.Status == "processing" {
-					// Update withdrawal request to completed
+					// Update withdrawal request to completed with confirmed tx_hash
 					transactionID := uuid.NullUUID{UUID: uuid.New(), Valid: true}
 					_, err = s.sql.UpdateWithdrawalRequestStatus(c.Context(), db.UpdateWithdrawalRequestStatusParams{
 						ID:            withdrawalRequest.ID,
 						Status:        "completed",
 						TransactionID: transactionID,
+						TxHash:        sql.NullString{String: activity.Hash, Valid: true},
 					})
 					if err != nil {
 						logger.Error("Failed to update withdrawal request to completed",
@@ -137,6 +147,7 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 						logger.Info("Withdrawal confirmed on blockchain",
 							zap.String("request_id", withdrawalRequest.ID.String()),
 							zap.String("tx_hash", activity.Hash),
+							zap.String("matched_by", matchMethod),
 						)
 
 						// Send withdrawal completed notification synchronously to operator
@@ -154,9 +165,10 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 						}
 					}
 				} else if err != nil {
-					logger.Warn("Withdrawal transaction not found in database",
+					logger.Warn("Withdrawal transaction not found in database (tried tx_hash and to_address)",
 						zap.String("tx_hash", activity.Hash),
 						zap.String("from_address", activity.FromAddress),
+						zap.String("to_address", activity.ToAddress),
 					)
 				}
 			}

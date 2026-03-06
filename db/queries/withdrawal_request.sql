@@ -62,3 +62,8 @@ LIMIT $2 OFFSET $3;
 -- name: GetWithdrawalRequestByTxHash :one
 SELECT * FROM withdrawal_requests
 WHERE tx_hash = $1 LIMIT 1;
+
+-- name: GetProcessingWithdrawalByToAddress :one
+SELECT * FROM withdrawal_requests
+WHERE to_address = $1 AND status = 'processing'
+ORDER BY created_at DESC LIMIT 1;
