@@ -339,6 +339,20 @@ func (q *Queries) ListPendingDeposits(ctx context.Context) ([]DepositRequest, er
 	return items, nil
 }
 
+const setDepositTransactionID = `-- name: SetDepositTransactionID :exec
+UPDATE deposit_requests SET transaction_id = $2, updated_at = NOW() WHERE id = $1
+`
+
+type SetDepositTransactionIDParams struct {
+	ID            uuid.UUID     `json:"id"`
+	TransactionID uuid.NullUUID `json:"transaction_id"`
+}
+
+func (q *Queries) SetDepositTransactionID(ctx context.Context, arg SetDepositTransactionIDParams) error {
+	_, err := q.db.ExecContext(ctx, setDepositTransactionID, arg.ID, arg.TransactionID)
+	return err
+}
+
 const updateDepositRequestStatus = `-- name: UpdateDepositRequestStatus :one
 UPDATE deposit_requests
 SET 

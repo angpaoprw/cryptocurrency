@@ -69,3 +69,6 @@ WHERE customer_id = $1
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC
 LIMIT 1;
+
+-- name: SetDepositTransactionID :exec
+UPDATE deposit_requests SET transaction_id = $2, updated_at = NOW() WHERE id = $1;

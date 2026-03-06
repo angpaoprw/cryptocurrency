@@ -1018,6 +1018,34 @@ func (mr *MockQuerierMockRecorder) ListWithdrawalRequestsByCustomer(ctx, arg int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWithdrawalRequestsByCustomer", reflect.TypeOf((*MockQuerier)(nil).ListWithdrawalRequestsByCustomer), ctx, arg)
 }
 
+// SetDepositTransactionID mocks base method.
+func (m *MockQuerier) SetDepositTransactionID(ctx context.Context, arg db.SetDepositTransactionIDParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetDepositTransactionID", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetDepositTransactionID indicates an expected call of SetDepositTransactionID.
+func (mr *MockQuerierMockRecorder) SetDepositTransactionID(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDepositTransactionID", reflect.TypeOf((*MockQuerier)(nil).SetDepositTransactionID), ctx, arg)
+}
+
+// SetWithdrawalTransactionID mocks base method.
+func (m *MockQuerier) SetWithdrawalTransactionID(ctx context.Context, arg db.SetWithdrawalTransactionIDParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWithdrawalTransactionID", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetWithdrawalTransactionID indicates an expected call of SetWithdrawalTransactionID.
+func (mr *MockQuerierMockRecorder) SetWithdrawalTransactionID(ctx, arg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithdrawalTransactionID", reflect.TypeOf((*MockQuerier)(nil).SetWithdrawalTransactionID), ctx, arg)
+}
+
 // UpdateBlockchainNetwork mocks base method.
 func (m *MockQuerier) UpdateBlockchainNetwork(ctx context.Context, arg db.UpdateBlockchainNetworkParams) (db.BlockchainNetwork, error) {
 	m.ctrl.T.Helper()

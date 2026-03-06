@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/angpaoprw/cryptocurrency/api"
 	db "github.com/angpaoprw/cryptocurrency/db/sqlc"
@@ -62,6 +63,11 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 	}
 
 	for _, activity := range webhook.Event.Activity {
+		var matchedWithdrawalID uuid.UUID
+		var withdrawalMatched bool
+		var matchedDepositID uuid.UUID
+		var depositMatched bool
+
 		// Check if transaction already exists
 		existingTx, err := s.sql.GetTransactionByEventId(c.Context(), webhook.ID)
 		if err == nil && existingTx.ID.String() != "" {
@@ -107,58 +113,49 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 				}
 
 				if err == nil && withdrawalRequest.Status == "processing" {
-					// Update withdrawal request to completed with confirmed tx_hash
-					transactionID := uuid.NullUUID{UUID: uuid.New(), Valid: true}
-					_, err = s.sql.UpdateWithdrawalRequestStatus(c.Context(), db.UpdateWithdrawalRequestStatusParams{
-						ID:            withdrawalRequest.ID,
-						Status:        "completed",
-						TransactionID: transactionID,
-						TxHash:        sql.NullString{String: activity.Hash, Valid: true},
-					})
-					if err != nil {
-						logger.Error("Failed to update withdrawal request to completed",
-							zap.Error(err),
-							zap.String("request_id", withdrawalRequest.ID.String()),
+					// Skip if activity's to_address doesn't match withdrawal's to_address
+					// Alchemy sends multiple activities per tx (contract call + token transfer)
+					if !strings.EqualFold(activity.ToAddress, withdrawalRequest.ToAddress) {
+						logger.Info("Skipping withdrawal update: activity to_address doesn't match withdrawal",
+							zap.String("activity_to", activity.ToAddress),
+							zap.String("withdrawal_to", withdrawalRequest.ToAddress),
+							zap.String("tx_hash", activity.Hash),
 						)
 					} else {
-						// Update wallet balance (deduct withdrawn amount)
-						if errFrom == nil {
-							var balance decimal.Decimal
-							if fromWallet.Balance.Valid {
-								balance, _ = decimal.NewFromString(fromWallet.Balance.String)
-							}
-							withdrawnAmount, _ := decimal.NewFromString(withdrawalRequest.RequestedAmount)
-							newBalance := balance.Sub(withdrawnAmount)
-							_, err = s.sql.UpdateWalletBalance(c.Context(), db.UpdateWalletBalanceParams{
-								ID:      fromWallet.ID,
-								Balance: sql.NullString{String: newBalance.String(), Valid: true},
-							})
-							if err != nil {
-								logger.Error("Failed to update wallet balance after withdrawal",
-									zap.Error(err),
-									zap.String("wallet_id", fromWallet.ID.String()),
-								)
-							}
-						}
+						// Update withdrawal request to completed (transaction_id set after tx is created)
+						_, err = s.sql.UpdateWithdrawalRequestStatus(c.Context(), db.UpdateWithdrawalRequestStatusParams{
+							ID:            withdrawalRequest.ID,
+							Status:        "completed",
+							TransactionID: uuid.NullUUID{Valid: false},
+							TxHash:        sql.NullString{String: activity.Hash, Valid: true},
+						})
+						if err != nil {
+							logger.Error("Failed to update withdrawal request to completed",
+								zap.Error(err),
+								zap.String("request_id", withdrawalRequest.ID.String()),
+							)
+						} else {
+							matchedWithdrawalID = withdrawalRequest.ID
+							withdrawalMatched = true
 
-						logger.Info("Withdrawal confirmed on blockchain",
-							zap.String("request_id", withdrawalRequest.ID.String()),
-							zap.String("tx_hash", activity.Hash),
-							zap.String("matched_by", matchMethod),
-						)
+							logger.Info("Withdrawal confirmed on blockchain",
+								zap.String("request_id", withdrawalRequest.ID.String()),
+								zap.String("tx_hash", activity.Hash),
+								zap.String("matched_by", matchMethod),
+							)
 
-						// Send withdrawal completed notification synchronously to operator
-						if s.notificationClient != nil {
-							s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
-								"request_id":     withdrawalRequest.ID.String(),
-								"transaction_id": transactionID.UUID.String(),
-								"tx_hash":        activity.Hash,
-								"to_address":     withdrawalRequest.ToAddress,
-								"amount":         withdrawalRequest.RequestedAmount,
-								"network":        withdrawalRequest.Network,
-								"token":          withdrawalRequest.Token,
-								"status":         "completed",
-							})
+							// Send withdrawal completed notification
+							if s.notificationClient != nil {
+								s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
+									"request_id": withdrawalRequest.ID.String(),
+									"tx_hash":    activity.Hash,
+									"to_address": withdrawalRequest.ToAddress,
+									"amount":     withdrawalRequest.RequestedAmount,
+									"network":    withdrawalRequest.Network,
+									"token":      withdrawalRequest.Token,
+									"status":     "completed",
+								})
+							}
 						}
 					}
 				} else if err != nil {
@@ -201,16 +198,19 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 						status = "completed"
 					}
 
-					txID := uuid.NullUUID{UUID: uuid.New(), Valid: true}
+					// Update deposit request (transaction_id set after tx is created)
 					_, err = s.sql.UpdateDepositRequestStatus(c.Context(), db.UpdateDepositRequestStatusParams{
 						ID:             depositRequest.ID,
 						Status:         status,
 						ReceivedAmount: sql.NullString{String: receivedAmount.String(), Valid: true},
-						TransactionID:  txID,
+						TransactionID:  uuid.NullUUID{Valid: false},
 					})
 					if err != nil {
 						logger.Error("Failed to update deposit request", zap.Error(err))
 					} else {
+						matchedDepositID = depositRequest.ID
+						depositMatched = true
+
 						logger.Info("Deposit request updated",
 							zap.String("request_id", depositRequest.ID.String()),
 							zap.String("status", status),
@@ -220,7 +220,6 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 						if status == "completed" && s.notificationClient != nil {
 							notificationData := map[string]interface{}{
 								"request_id":      depositRequest.ID.String(),
-								"transaction_id":  txID.UUID.String(),
 								"tx_hash":         activity.Hash,
 								"deposit_address": depositRequest.AssignedAddress,
 								"received_amount": receivedAmount.String(),
@@ -322,6 +321,32 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 			zap.String("type", transactionType),
 			zap.Bool("matched", isMatched),
 		)
+
+		// Link transaction_id to matched requests (now that the transaction exists in DB)
+		if withdrawalMatched {
+			err = s.sql.SetWithdrawalTransactionID(c.Context(), db.SetWithdrawalTransactionIDParams{
+				ID:            matchedWithdrawalID,
+				TransactionID: uuid.NullUUID{UUID: transaction.ID, Valid: true},
+			})
+			if err != nil {
+				logger.Error("Failed to set transaction_id on withdrawal request",
+					zap.Error(err),
+					zap.String("request_id", matchedWithdrawalID.String()),
+				)
+			}
+		}
+		if depositMatched {
+			err = s.sql.SetDepositTransactionID(c.Context(), db.SetDepositTransactionIDParams{
+				ID:            matchedDepositID,
+				TransactionID: uuid.NullUUID{UUID: transaction.ID, Valid: true},
+			})
+			if err != nil {
+				logger.Error("Failed to set transaction_id on deposit request",
+					zap.Error(err),
+					zap.String("request_id", matchedDepositID.String()),
+				)
+			}
+		}
 	}
 
 	return c.JSON(fiber.Map{

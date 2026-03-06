@@ -77,6 +77,8 @@ type Querier interface {
 	ListUnmatchedTransactions(ctx context.Context, arg ListUnmatchedTransactionsParams) ([]Transaction, error)
 	ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wallet, error)
 	ListWithdrawalRequestsByCustomer(ctx context.Context, arg ListWithdrawalRequestsByCustomerParams) ([]WithdrawalRequest, error)
+	SetDepositTransactionID(ctx context.Context, arg SetDepositTransactionIDParams) error
+	SetWithdrawalTransactionID(ctx context.Context, arg SetWithdrawalTransactionIDParams) error
 	UpdateBlockchainNetwork(ctx context.Context, arg UpdateBlockchainNetworkParams) (BlockchainNetwork, error)
 	UpdateDepositRequestStatus(ctx context.Context, arg UpdateDepositRequestStatusParams) (DepositRequest, error)
 	UpdateFailedAPIRequestAttempt(ctx context.Context, id uuid.UUID) (FailedApiRequest, error)

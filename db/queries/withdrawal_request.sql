@@ -77,3 +77,6 @@ ORDER BY created_at DESC LIMIT 1;
 SELECT * FROM withdrawal_requests
 WHERE LOWER(to_address) = LOWER($1) AND status IN ('pending', 'processing')
 ORDER BY created_at DESC LIMIT 1;
+
+-- name: SetWithdrawalTransactionID :exec
+UPDATE withdrawal_requests SET transaction_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1;

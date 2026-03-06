@@ -386,6 +386,20 @@ func (q *Queries) ListWithdrawalRequestsByCustomer(ctx context.Context, arg List
 	return items, nil
 }
 
+const setWithdrawalTransactionID = `-- name: SetWithdrawalTransactionID :exec
+UPDATE withdrawal_requests SET transaction_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+`
+
+type SetWithdrawalTransactionIDParams struct {
+	ID            uuid.UUID     `json:"id"`
+	TransactionID uuid.NullUUID `json:"transaction_id"`
+}
+
+func (q *Queries) SetWithdrawalTransactionID(ctx context.Context, arg SetWithdrawalTransactionIDParams) error {
+	_, err := q.db.ExecContext(ctx, setWithdrawalTransactionID, arg.ID, arg.TransactionID)
+	return err
+}
+
 const updateWithdrawalRequestFees = `-- name: UpdateWithdrawalRequestFees :one
 UPDATE withdrawal_requests
 SET 
