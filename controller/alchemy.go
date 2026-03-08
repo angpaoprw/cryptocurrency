@@ -147,13 +147,15 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 							// Send withdrawal completed notification
 							if s.notificationClient != nil {
 								s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
-									"request_id": withdrawalRequest.ID.String(),
-									"tx_hash":    activity.Hash,
-									"to_address": withdrawalRequest.ToAddress,
-									"amount":     withdrawalRequest.RequestedAmount,
-									"network":    withdrawalRequest.Network,
-									"token":      withdrawalRequest.Token,
-									"status":     "completed",
+									"request_id":    withdrawalRequest.ID.String(),
+									"tx_hash":       activity.Hash,
+									"to_address":    withdrawalRequest.ToAddress,
+									"amount":        withdrawalRequest.RequestedAmount,
+									"network":       withdrawalRequest.Network,
+									"token":         withdrawalRequest.Token,
+									"status":        "completed",
+									"actual_amount": decimal.NewFromFloat(activity.Value).String(),
+									"actual_asset":  activity.Asset,
 								})
 							}
 						}
@@ -226,6 +228,8 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 								"network":         depositRequest.Network,
 								"token":           depositRequest.Token,
 								"status":          "completed",
+								"actual_amount":   decimal.NewFromFloat(activity.Value).String(),
+								"actual_asset":    activity.Asset,
 							}
 							if depositRequest.RefID.Valid {
 								notificationData["ref_id"] = depositRequest.RefID.String
