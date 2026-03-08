@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -547,11 +548,40 @@ func (s *Controller) markWithdrawalFailed(requestID uuid.UUID, errorMessage stri
 
 	// Send notification for withdrawal failure
 	if s.notificationClient != nil {
-		s.notificationClient.SendNotification(customerID, api.EventWithdrawalFailed, map[string]interface{}{
+		body := map[string]interface{}{
 			"request_id":    requestID.String(),
 			"status":        "failed",
 			"error_message": errorMessage,
-		})
+		}
+		err := s.notificationClient.SendNotification(customerID, api.EventWithdrawalFailed, body)
+		if err != nil {
+			logger.Warn("Failed to send withdrawal failed notification",
+				zap.String("customer_id", customerID),
+				zap.String("request_id", requestID.String()),
+				zap.Error(err),
+			)
+
+			bodyBytes, marshalErr := json.Marshal(body)
+			if marshalErr != nil {
+				logger.Error("Failed to marshal notification body",
+					zap.Any("body", body),
+					zap.Error(marshalErr),
+				)
+			} else {
+				createFailedAPIReqParam := db.CreateFailedAPIRequestParams{
+					WithdrawalRequestID: uuid.NullUUID{Valid: true, UUID: requestID},
+					Body:                bodyBytes,
+					Error:               err.Error(),
+				}
+
+				if _, createErr := s.sql.CreateFailedAPIRequest(ctx, createFailedAPIReqParam); createErr != nil {
+					logger.Error("Failed to create failed API request record",
+						zap.String("request_id", requestID.String()),
+						zap.Error(createErr),
+					)
+				}
+			}
+		}
 	}
 }
 
@@ -578,11 +608,40 @@ func (s *Controller) markWithdrawalCancelled(requestID uuid.UUID, reason string,
 
 	// Send notification so service can return credit to customer
 	if s.notificationClient != nil {
-		s.notificationClient.SendNotification(customerID, api.EventWithdrawalCancelled, map[string]interface{}{
+		body := map[string]interface{}{
 			"request_id":    requestID.String(),
 			"status":        "cancelled",
 			"error_message": reason,
-		})
+		}
+		err := s.notificationClient.SendNotification(customerID, api.EventWithdrawalCancelled, body)
+		if err != nil {
+			logger.Warn("Failed to send withdrawal cancelled notification",
+				zap.String("customer_id", customerID),
+				zap.String("request_id", requestID.String()),
+				zap.Error(err),
+			)
+
+			bodyBytes, marshalErr := json.Marshal(body)
+			if marshalErr != nil {
+				logger.Error("Failed to marshal notification body",
+					zap.Any("body", body),
+					zap.Error(marshalErr),
+				)
+			} else {
+				createFailedAPIReqParam := db.CreateFailedAPIRequestParams{
+					WithdrawalRequestID: uuid.NullUUID{Valid: true, UUID: requestID},
+					Body:                bodyBytes,
+					Error:               err.Error(),
+				}
+
+				if _, createErr := s.sql.CreateFailedAPIRequest(ctx, createFailedAPIReqParam); createErr != nil {
+					logger.Error("Failed to create failed API request record",
+						zap.String("request_id", requestID.String()),
+						zap.Error(createErr),
+					)
+				}
+			}
+		}
 	}
 }
 

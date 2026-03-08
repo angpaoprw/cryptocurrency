@@ -146,7 +146,7 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 
 							// Send withdrawal completed notification
 							if s.notificationClient != nil {
-								s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, map[string]interface{}{
+								body := map[string]interface{}{
 									"request_id":    withdrawalRequest.ID.String(),
 									"tx_hash":       activity.Hash,
 									"to_address":    withdrawalRequest.ToAddress,
@@ -156,7 +156,36 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 									"status":        "completed",
 									"actual_amount": decimal.NewFromFloat(activity.Value).String(),
 									"actual_asset":  activity.Asset,
-								})
+								}
+								err := s.notificationClient.SendNotification(withdrawalRequest.CustomerID, api.EventWithdrawalCompleted, body)
+								if err != nil {
+									logger.Warn("Failed to send withdrawal completed notification",
+										zap.String("customer_id", withdrawalRequest.CustomerID),
+										zap.String("request_id", withdrawalRequest.ID.String()),
+										zap.Error(err),
+									)
+
+									bodyBytes, marshalErr := json.Marshal(body)
+									if marshalErr != nil {
+										logger.Error("Failed to marshal notification body",
+											zap.Any("body", body),
+											zap.Error(marshalErr),
+										)
+									} else {
+										createFailedAPIReqParam := db.CreateFailedAPIRequestParams{
+											WithdrawalRequestID: uuid.NullUUID{Valid: true, UUID: withdrawalRequest.ID},
+											Body:                bodyBytes,
+											Error:               err.Error(),
+										}
+
+										if _, createErr := s.sql.CreateFailedAPIRequest(c.Context(), createFailedAPIReqParam); createErr != nil {
+											logger.Error("Failed to create failed API request record",
+												zap.String("request_id", withdrawalRequest.ID.String()),
+												zap.Error(createErr),
+											)
+										}
+									}
+								}
 							}
 						}
 					}
@@ -234,7 +263,35 @@ func (s *Controller) AlchemyCallback(c *fiber.Ctx) error {
 							if depositRequest.RefID.Valid {
 								notificationData["ref_id"] = depositRequest.RefID.String
 							}
-							s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCompleted, notificationData)
+							err := s.notificationClient.SendNotification(depositRequest.CustomerID, api.EventDepositCompleted, notificationData)
+							if err != nil {
+								logger.Warn("Failed to send deposit completed notification",
+									zap.String("customer_id", depositRequest.CustomerID),
+									zap.String("request_id", depositRequest.ID.String()),
+									zap.Error(err),
+								)
+
+								bodyBytes, marshalErr := json.Marshal(notificationData)
+								if marshalErr != nil {
+									logger.Error("Failed to marshal notification body",
+										zap.Any("body", notificationData),
+										zap.Error(marshalErr),
+									)
+								} else {
+									createFailedAPIReqParam := db.CreateFailedAPIRequestParams{
+										DepositRequestID: uuid.NullUUID{Valid: true, UUID: depositRequest.ID},
+										Body:             bodyBytes,
+										Error:            err.Error(),
+									}
+
+									if _, createErr := s.sql.CreateFailedAPIRequest(c.Context(), createFailedAPIReqParam); createErr != nil {
+										logger.Error("Failed to create failed API request record",
+											zap.String("request_id", depositRequest.ID.String()),
+											zap.Error(createErr),
+										)
+									}
+								}
+							}
 						}
 					}
 				} else {
